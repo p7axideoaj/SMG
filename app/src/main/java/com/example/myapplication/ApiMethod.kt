@@ -2,6 +2,7 @@ package com.example.myapplication
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.MutableState
 import com.example.lostarkapp.retrofitAPI
 import com.example.myapplication.dataModel.*
 import retrofit2.Call
@@ -149,15 +150,13 @@ fun getJSONProfileCombatSkills(cList: MutableList<charterCombatSkills>, ctx: Con
         .build()
 
     val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
-
     val call: Call<List<charterCombatSkills>> = retrofitAPIMethod.getCharterCombatSkills(username)
-
     call.enqueue(object : Callback<List<charterCombatSkills>?> {
         override fun onResponse(call: Call<List<charterCombatSkills>?>, response: Response<List<charterCombatSkills>?>) {
-            Log.d("아아","${response.code()}")
+            Log.d("스킬스킬1","${response.code()}")
             if(response.isSuccessful) {
                 var cp: List<charterCombatSkills> = response.body()!!
-                Log.d("아아","${cp}\nㅁㅁㅁㅁ")
+                Log.d("스킬스킬2","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
                 }
@@ -171,7 +170,7 @@ fun getJSONProfileCombatSkills(cList: MutableList<charterCombatSkills>, ctx: Con
         }
 
         override fun onFailure(call: Call<List<charterCombatSkills>?>, t: Throwable) {
-            t.printStackTrace()
+            Log.d("스킬스킬", "${t.message}")
         }
     })
 }
@@ -187,10 +186,10 @@ fun getJSONProfileEngravings(cList: MutableList<charterEngravings>, ctx: Context
 
     call.enqueue(object : Callback<charterEngravings?> {
         override fun onResponse(call: Call<charterEngravings?>, response: Response<charterEngravings?>) {
-            Log.d("아아","${response.code()}")
+            Log.d("이펙트","${response.code()}")
             if(response.isSuccessful) {
                 var cp: charterEngravings = response.body()!!
-                Log.d("아아","${cp}\nㅁㅁㅁㅁ")
+                Log.d("이펙트","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
                 }
@@ -208,7 +207,7 @@ fun getJSONProfileEngravings(cList: MutableList<charterEngravings>, ctx: Context
         }
     })
 }
-fun getJSONProfileCards(cList: MutableList<charterCards>, ctx: Context, username: String) {
+fun getJSONProfileCards(cList: MutableState<charterCards?>, ctx: Context, username: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -220,14 +219,11 @@ fun getJSONProfileCards(cList: MutableList<charterCards>, ctx: Context, username
 
     call.enqueue(object : Callback<charterCards?> {
         override fun onResponse(call: Call<charterCards?>, response: Response<charterCards?>) {
-            Log.d("아아","${response.code()}")
+            Log.d("카드","${response.code()}")
             if(response.isSuccessful) {
                 var cp: charterCards = response.body()!!
-                Log.d("아아","${cp}\nㅁㅁㅁㅁ")
-                if(cList.isNotEmpty()) {
-                    cList.clear()
-                }
-                cList.add(cp)
+                Log.d("카드","${cp}\nㅁㅁㅁㅁ")
+                cList.value = cp
 
             } else if(response.code() == 429){
 
@@ -239,6 +235,7 @@ fun getJSONProfileCards(cList: MutableList<charterCards>, ctx: Context, username
         override fun onFailure(call: Call<charterCards?>, t: Throwable) {
             t.printStackTrace()
         }
+
     })
 }
 fun getJSONProfileGems(cList: MutableList<charterGems>, ctx: Context, username: String) {
@@ -253,14 +250,16 @@ fun getJSONProfileGems(cList: MutableList<charterGems>, ctx: Context, username: 
 
     call.enqueue(object : Callback<charterGems?> {
         override fun onResponse(call: Call<charterGems?>, response: Response<charterGems?>) {
-            Log.d("아아","${response.code()}")
+            Log.d("젬","${response.code()}")
             if(response.isSuccessful) {
-                var cp: charterGems = response.body()!!
-                Log.d("아아","${cp}\nㅁㅁㅁㅁ")
+                var cp: charterGems? = response.body()
+                Log.d("젬","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
                 }
-                cList.add(cp)
+                if (cp != null) {
+                    cList.add(cp)
+                }
 
             } else if(response.code() == 429){
 
@@ -385,10 +384,10 @@ fun getJSONProfileCollectibles(cList: MutableList<charterCollectibles>, ctx: Con
 
     call.enqueue(object : Callback<List<charterCollectibles>?> {
         override fun onResponse(call: Call<List<charterCollectibles>?>, response: Response<List<charterCollectibles>?>) {
-            Log.d("아아","${response.code()}")
+            Log.d("컬렉션","${response.code()}")
             if(response.isSuccessful) {
                 var cp: List<charterCollectibles> = response.body()!!
-                Log.d("아아","${cp}\nㅁㅁㅁㅁ")
+                Log.d("컬렉션","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
                 }

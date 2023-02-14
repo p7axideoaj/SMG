@@ -13,7 +13,7 @@ data class Colosseums(
     @SerializedName("Competitive") val competitive: Competitive?,
     @SerializedName("TeamDeathmatch") val teamDeathmatch: TeamDeathmatch?,
     @SerializedName("Deathmatch") val deathmatch: Deathmatch?,
-    @SerializedName("TeamElimination") val teamElimination: TeamDeathmatch?,
+    @SerializedName("TeamElimination") val teamElimination: TeamElimination?,
     @SerializedName("CoOpBattle") val coOpBattle: CoOpBattle?,
 )
 data class Competitive(

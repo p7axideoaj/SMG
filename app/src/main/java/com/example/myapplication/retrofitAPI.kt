@@ -30,13 +30,13 @@ interface retrofitAPI {
     @GET("$url/avatars")
     fun getCharterAvatars(@Path("username") username:String): Call<List<charterAvatars>>
     @Headers("$token")
-    @GET("$url/combat-skills")
+    @GET("$url/combat-skills") // 스킬
     fun getCharterCombatSkills(@Path("username") username:String): Call<List<charterCombatSkills>>
     @Headers("$token")
-    @GET("$url/engravings")
+    @GET("$url/engravings") // 스킬
     fun getCharterEngravings(@Path("username") username:String): Call<charterEngravings>
     @Headers("$token")
-    @GET("$url/cards")
+    @GET("$url/cards") // 수집품
     fun getCharterCards(@Path("username") username:String): Call<charterCards>
     @Headers("$token")
     @GET("$url/gems")
@@ -45,6 +45,6 @@ interface retrofitAPI {
     @GET("$url/colosseums")
     fun getCharterColosseums(@Path("username") username:String): Call<charterColosseums>
     @Headers("$token")
-    @GET("$url/collectibles")
+    @GET("$url/collectibles") // 수집품
     fun getCharterCollectibles(@Path("username") username:String): Call<List<charterCollectibles>>
 }

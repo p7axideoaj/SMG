@@ -3,8 +3,8 @@ package com.example.myapplication.dataModel
 import com.google.gson.annotations.SerializedName
 
 data class charterGems(
-    @SerializedName("Gems") val Gems: List<Gems>,
-    @SerializedName("Effects") val Effects: List<Effects>,
+    @SerializedName("Gems") val Gems: List<Gems?>,
+    @SerializedName("Effects") val Effects: List<GemsEffects?>,
 )
 data class Gems(
     @SerializedName("Slot") val slot: Int,
@@ -14,7 +14,7 @@ data class Gems(
     @SerializedName("Grade") val grade: String,
     @SerializedName("Tooltip") val tooltip: String,
 )
-data class Effects(
+data class GemsEffects(
     @SerializedName("GemSlot") val gemSlot: Int,
     @SerializedName("Name") val name: String,
     @SerializedName("Description") val description: String,

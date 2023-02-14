@@ -22,13 +22,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.myapplication.dataModel.newsData
-import com.example.lostarkapp.retrofitAPI
 import com.example.myapplication.dataModel.charterProfile
 import com.example.myapplication.getJSONNewsDate
 import com.example.myapplication.getJSONProfile
@@ -39,14 +39,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import java.time.Duration
 import java.time.LocalDateTime
-import java.util.*
 
 //import okhttp3.logging.HttpLoggingInterceptor
 
@@ -66,7 +59,7 @@ class MainActivity : ComponentActivity() {
                     composable("search") { SerachPageHome(navController, prefs, context) }
                     composable("profileDetail/{username}") { it ->
                         it.arguments?.getString("username")
-                            ?.let { it1 -> ProfileDetailHome(navController, it1, context)}
+                            ?.let { it1 -> ProfileDetailHome(navController, it1, context, lifecycleScope)}
                     }
                     composable("addUser") { addUser(navController, prefs) }
                 }

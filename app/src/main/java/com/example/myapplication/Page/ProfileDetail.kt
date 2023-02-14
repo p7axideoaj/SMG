@@ -32,6 +32,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.myapplication.*
@@ -52,7 +53,12 @@ import java.time.ZoneOffset
 
 @ExperimentalPagerApi
 @Composable
-fun ProfileDetailHome(navController: NavHostController, username: String, context: Context) {
+fun ProfileDetailHome(
+    navController: NavHostController,
+    username: String,
+    context: Context,
+    lifecycleScope: LifecycleCoroutineScope
+) {
 
     val list = remember {
         mutableStateListOf<charterProfile>()
@@ -77,10 +83,13 @@ fun ProfileDetailHome(navController: NavHostController, username: String, contex
     list.map {
         db.addSearchData(searchData = SearchData(time = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC),name = it.CharacterName, title = it.Title?: "", image = it.CharacterImage?: ""))
     }
-    LazyColumn() {
-        items(list) {
-            profile(it)
-            profileContent(it, context, username)
+    val scaffoldState = rememberScaffoldState()
+    Scaffold(scaffoldState = scaffoldState) {
+        LazyColumn() {
+            items(list) {
+                profile(it)
+                profileContent(it, context, username, scaffoldState, lifecycleScope)
+            }
         }
     }
 }
@@ -155,7 +164,13 @@ fun profile(it: charterProfile) {
 
 @ExperimentalPagerApi
 @Composable
-fun profileContent(it: charterProfile, context: Context, username: String) {
+fun profileContent(
+    it: charterProfile,
+    context: Context,
+    username: String,
+    scaffoldState: ScaffoldState,
+    lifecycleScope: LifecycleCoroutineScope
+) {
     // it : 캐릭터 정보
     // 스킬 정보
     val skillslist = remember {
@@ -171,7 +186,7 @@ fun profileContent(it: charterProfile, context: Context, username: String) {
     }
     // 카드 정보
     val cardslist = remember {
-        mutableStateListOf<charterCards>()
+        mutableStateOf<charterCards?>(null)
     }
     // 수집품 정보
     val collectibleslist = remember {
@@ -195,12 +210,12 @@ fun profileContent(it: charterProfile, context: Context, username: String) {
             while (true) {
                 getJSONProfileEquipment(equipmentlist,context,username)
                 getJSONProfileAvatars(avatarslist, context, username)
-                getJSONProfileCards(cardslist, context, username)
                 getJSONProfileCollectibles(collectibleslist,context,username)
-                getJSONProfileCombatSkills(skillslist,context,username)
                 getJSONProfileColosseums(colosseumslist,context,username)
                 getJSONProfileEngravings(engravingslist,context,username)
                 getJSONProfileGems(gemslist,context,username)
+                getJSONProfileCards(cardslist, context, username)
+                getJSONProfileCombatSkills(skillslist,context,username)
                 delay(6000)
             }
         }
@@ -230,12 +245,14 @@ fun profileContent(it: charterProfile, context: Context, username: String) {
                 }}
             }
             HorizontalPager(count = pages.size, state = pagerState) { page: Int ->
-                val items = listOf<@Composable ()->Unit>( { equipment(equipmentlist, it) }, { avatar(avatarslist, it) }, { gems(gemslist) })
+                val charterItems = listOf<@Composable ()->Unit>( { equipment(equipmentlist, it) }, { avatar(avatarslist, it) }, { gems(gemslist) })
+                val skillItem = listOf<@Composable ()->Unit>( { combatSkill(skillslist) }, { engravings(engravingslist, scaffoldState, lifecycleScope) })
+                val collectionItem = listOf<@Composable ()->Unit>( { card(cardslist) }, { collections(collectibleslist) })
                 val pagelist = mutableListOf<@Composable ()->Unit>(
                     { profileDetails(colosseumslist, it) },
-                    { itemslist(items) },
-                    { skills(skillslist) },
-                    { collection() },
+                    { itemslist(charterItems) },
+                    { skills(skillItem) },
+                    { collection(collectionItem) },
                 )
                 pagelist[page]()
             }
@@ -243,9 +260,636 @@ fun profileContent(it: charterProfile, context: Context, username: String) {
     }
 }
 @Composable
+fun card(cardslist: MutableState<charterCards?>) {
+    var idx by remember {
+        mutableStateOf(0)
+    }
+    Column(Modifier.padding(16.dp)) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(400.dp)) {
+            LazyVerticalGrid(GridCells.Fixed(3),Modifier.fillMaxWidth().height(450.dp)) {
+                if (cardslist.value?.Cards.isNullOrEmpty()) {
+                    item { Text(text = "정보를 불러오지 못했습니다") }
+                } else {
+                    itemsIndexed(cardslist.value?.Cards!!) { idx1, it ->
+                        if(cardslist.value?.Effects.isNullOrEmpty()) {
+                            Text(text = "적용중인 카드셋가 없습니다")
+                        }else {
+                            if(cardslist.value?.Effects?.get(idx)?.cardSlots?.contains(it.slot)!!) {
+                                Column() {
+                                    AsyncImage(model = "${it.icon}", contentDescription = "${it.name}")
+                                    Text(text = "${it.name}")
+                                    Text(text = "${it.awakeCount} / ${it.awakeTotal}")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(100.dp)) {
+                if (cardslist.value?.Effects == null) {
+                } else {
+                        Row() {
+                            for (i in 0 until cardslist.value?.Effects?.size!!) {
+                                Log.d("로그로그", "${i}")
+                                Button(onClick = {
+                                    idx = i
+                                }) {
+                                    Text(text = "${i + 1}")
+                                }
+                            }
+                        }
+                }
+        }
+    }
+}
+@Composable
+fun collections(collectionslist: SnapshotStateList<charterCollectibles>) {
+
+}
+
+@Composable
+fun itemslist(items: List<@Composable () -> Unit>) {
+    val text = listOf("장비", "아바타", "젬")
+    var index = remember {
+        mutableStateOf(0)
+    }
+    Box() {
+        Column() {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(500.dp)) {
+                if(items.isNullOrEmpty()) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(size = 64.dp),
+                        color = Color.Black,
+                        strokeWidth = 6.dp
+                    )
+                } else {
+                    items[index.value]()
+                }
+            }
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(200.dp), contentAlignment = Alignment.BottomCenter) {
+                LazyVerticalGrid(columns = GridCells.Adaptive(minSize = (200/2.7).dp)) {
+                    text.forEachIndexed { i, s ->
+                        item {
+                            TextButton(onClick = {index.value = i}) {
+                                Text(text = s)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+@Composable
+fun skills(items: List<@Composable () -> Unit>) {
+    val text = listOf("스킬", "각인")
+    var index = remember {
+        mutableStateOf(0)
+    }
+    Box() {
+        Column() {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(500.dp)) {
+                items[index.value]()
+            }
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(200.dp), contentAlignment = Alignment.BottomCenter) {
+                LazyVerticalGrid(columns = GridCells.Adaptive(minSize = (200/2).dp)) {
+                    text.forEachIndexed { i, s ->
+                        item {
+                            TextButton(onClick = {index.value = i}) {
+                                Text(text = s)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+@Composable
+fun combatSkill(skillslist: SnapshotStateList<charterCombatSkills>) {
+    Log.d("돼지돼지", "${skillslist}")
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(16.dp)) {
+        var index by remember { mutableStateOf(-1) }
+        LazyVerticalGrid(columns = GridCells.Fixed(4),
+            Modifier
+                .fillMaxSize()) {
+            itemsIndexed(skillslist.toList()) { idx, it ->
+                Column(Modifier.clickable {
+                    Log.d("인덱", "${idx}")
+                    index = idx
+                }) {
+                    AsyncImage("${it.icon}", contentDescription = "스킬 이미지")
+                    Text("${it.name}")
+                    Box(Modifier.height(5.dp))
+                    if (it.rune == null) {
+                        Box(
+                            Modifier
+                                .width(20.dp)
+                                .height(40.dp)
+                        ) {
+                        }
+                    } else {
+                        Box(
+                            Modifier
+                                .width(40.dp)
+                                .height(60.dp)
+                        ) {
+                            Column(Modifier.fillMaxSize()) {
+                                AsyncImage("${it.rune.icon}", contentDescription = "룬 이미지")
+                                Text("${it.rune.name}")
+                            }
+                        }
+                    }
+                }
+                if (index != -1) {
+                    Dialog(
+                        onDismissRequest = {
+                            index = -1
+                        }
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .width(250.dp)
+                                .padding(10.dp),
+                            color = Color.White
+                        ) {
+                            Box(Modifier.fillMaxSize()) {
+                                LazyColumn(Modifier.fillMaxSize()) {
+                                    val skillJson =
+                                        JSONObject(skillslist.toList()[if (index == -1) 0 else index].tooltip)
+                                    for (i in 0 until skillJson.length()) {
+                                        val value =
+                                            skillJson.getJSONObject("Element_%03d".format(i))
+                                        when (value["type"]) {
+                                            "NameTagBox", "SingleTextBox", "MultiTextBox", "ShowMeTheMoney" -> item {
+                                                Text(
+                                                    parse(value.getString("value"))
+                                                )
+                                            }
+                                            "ItemPartBox" -> item {
+                                                Column() {
+                                                    Text(
+                                                        text = parse(
+                                                            value.getJSONObject("value")
+                                                                .getString("Element_000")
+                                                        )
+                                                    )
+                                                    Row() {
+                                                        Text(
+                                                            text = parse(
+                                                                value.getJSONObject("value")
+                                                                    .getString("Element_001")
+                                                            )
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            "TripodSkillCustom" -> item {
+                                                Column() {
+                                                    if (!value.getJSONObject("value")
+                                                            .getJSONObject("Element_000")
+                                                            .getBoolean("lock")
+                                                    ) {
+                                                        AsyncImage(
+                                                            model = value.getJSONObject(
+                                                                "value"
+                                                            )
+                                                                .getJSONObject("Element_000")
+                                                                .getJSONObject("slotData")
+                                                                .getString("iconPath"),
+                                                            contentDescription = "스킬 아이콘"
+                                                        )
+                                                        Text(
+                                                            "${
+                                                                parse(
+                                                                    value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject(
+                                                                            "Element_000"
+                                                                        )
+                                                                        .getString(
+                                                                            "desc"
+                                                                        )
+                                                                )
+                                                            } ${
+                                                                parse(
+                                                                    value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject(
+                                                                            "Element_000"
+                                                                        )
+                                                                        .getString(
+                                                                            "name"
+                                                                        )
+                                                                )
+                                                            }"
+                                                        )
+                                                        Text(
+                                                            "${
+                                                                parse(
+                                                                    value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject(
+                                                                            "Element_000"
+                                                                        )
+                                                                        .getString(
+                                                                            "tier"
+                                                                        )
+                                                                )
+                                                            }"
+                                                        )
+                                                    } else {
+                                                        Text(
+                                                            "${
+                                                                parse(
+                                                                    value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject(
+                                                                            "Element_000"
+                                                                        )
+                                                                        .getString(
+                                                                            "desc"
+                                                                        )
+                                                                )
+                                                            }"
+                                                        )
+                                                    }
+                                                    if (!value.getJSONObject("value")
+                                                            .getJSONObject("Element_001")
+                                                            .getBoolean("lock")
+                                                    ) {
+                                                        AsyncImage(
+                                                            model = value.getJSONObject(
+                                                                "value"
+                                                            )
+                                                                .getJSONObject("Element_001")
+                                                                .getJSONObject("slotData")
+                                                                .getString("iconPath"),
+                                                            contentDescription = "스킬 아이콘"
+                                                        )
+                                                        Text(
+                                                            "${
+                                                                parse(
+                                                                    value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject(
+                                                                            "Element_001"
+                                                                        )
+                                                                        .getString(
+                                                                            "desc"
+                                                                        )
+                                                                )
+                                                            } ${
+                                                                parse(
+                                                                    value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject(
+                                                                            "Element_001"
+                                                                        )
+                                                                        .getString(
+                                                                            "name"
+                                                                        )
+                                                                )
+                                                            }"
+                                                        )
+                                                        Text(
+                                                            "${
+                                                                parse(
+                                                                    value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject(
+                                                                            "Element_001"
+                                                                        )
+                                                                        .getString(
+                                                                            "tier"
+                                                                        )
+                                                                )
+                                                            }"
+                                                        )
+                                                    } else {
+                                                        Text(
+                                                            "${
+                                                                parse(
+                                                                    value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject(
+                                                                            "Element_001"
+                                                                        )
+                                                                        .getString(
+                                                                            "desc"
+                                                                        )
+                                                                )
+                                                            }"
+                                                        )
+                                                    }
+                                                    if (!value.getJSONObject("value")
+                                                            .getJSONObject("Element_002")
+                                                            .getBoolean("lock")
+                                                    ) {
+                                                        AsyncImage(
+                                                            model = value.getJSONObject(
+                                                                "value"
+                                                            )
+                                                                .getJSONObject("Element_002")
+                                                                .getJSONObject("slotData")
+                                                                .getString("iconPath"),
+                                                            contentDescription = "스킬 아이콘"
+                                                        )
+                                                        Text(
+                                                            "${
+                                                                parse(
+                                                                    value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject(
+                                                                            "Element_002"
+                                                                        )
+                                                                        .getString(
+                                                                            "desc"
+                                                                        )
+                                                                )
+                                                            } ${
+                                                                parse(
+                                                                    value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject(
+                                                                            "Element_002"
+                                                                        )
+                                                                        .getString(
+                                                                            "name"
+                                                                        )
+                                                                )
+                                                            }"
+                                                        )
+                                                        Text(
+                                                            "${
+                                                                parse(
+                                                                    value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject(
+                                                                            "Element_002"
+                                                                        )
+                                                                        .getString(
+                                                                            "tier"
+                                                                        )
+                                                                )
+                                                            }"
+                                                        )
+                                                    } else {
+                                                        Text(
+                                                            "${
+                                                                parse(
+                                                                    value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject(
+                                                                            "Element_002"
+                                                                        )
+                                                                        .getString(
+                                                                            "desc"
+                                                                        )
+                                                                )
+                                                            }"
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            "CommonSkillTitle" -> item {
+                                                Column() {
+                                                    AsyncImage(
+                                                        model = value.getJSONObject("value")
+                                                            .getJSONObject("slotData")
+                                                            .getString("iconPath"),
+                                                        contentDescription = "스킬 아이콘"
+                                                    )
+                                                    Text(
+                                                        text = parse(
+                                                            value.getJSONObject("value")
+                                                                .getString("name")
+                                                        )
+                                                    )
+                                                    Text(
+                                                        text = parse(
+                                                            value.getJSONObject("value")
+                                                                .getString("level")
+                                                        )
+                                                    )
+                                                    Text(
+                                                        text = parse(
+                                                            value.getJSONObject("value")
+                                                                .getString("leftText")
+                                                        )
+                                                    )
+                                                    Text(
+                                                        text = parse(
+                                                            value.getJSONObject("value")
+                                                                .getString("middleText")
+                                                        )
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if (skillslist.toList()[if (index == -1) 0 else index].tripods.isNullOrEmpty()) {
+                                        item { Text("적용된 트라이포드가 없습니다") }
+                                    } else {
+                                        if (skillslist.toList()[if (index == -1) 0 else index].tripods != null) {
+                                            items(skillslist.toList()[if (index == -1) 0 else index].tripods) {
+                                                AsyncImage(
+                                                    "${it.icon}",
+                                                    contentDescription = "스킬이미지"
+                                                )
+                                                Text("${it.name}")
+                                                Text("${it.level}")
+                                                Text("${parse(it.tooltip ?: "")}")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun engravings(
+    engravingslist: SnapshotStateList<charterEngravings>,
+    scaffoldState: ScaffoldState,
+    lifecycleScope: LifecycleCoroutineScope
+) {
+    Column(
+        Modifier
+            .padding(16.dp)
+            .fillMaxSize()) {
+        var index by remember { mutableStateOf(-1) }
+        LazyColumn() {
+            items(engravingslist.toList()) {
+                if(it.Engravings.isNullOrEmpty()) {
+                } else {
+                    for(i in it.Engravings.indices) {
+                        Row(Modifier.clickable { index = i }) {
+                            AsyncImage("${it.Engravings[i].icon}", contentDescription = "아이콘")
+                            Text("${it.Engravings[i].name}")
+                        }
+                        Box(Modifier.height(5.dp))
+                        if (index != -1) {
+                            Dialog(
+                                onDismissRequest = {
+                                    index = -1
+                                }
+                            ) {
+                                Surface(
+                                    modifier = Modifier
+                                        .width(250.dp)
+                                        .padding(10.dp),
+                                    color = Color.White
+                                ) {
+                                    Box(Modifier.fillMaxSize()) {
+                                        LazyColumn(Modifier.fillMaxSize()) {
+                                            val engravingsJson =
+                                                JSONObject(it.Engravings[if (index == -1) 0 else index].Tooltip)
+                                            for (i in 0 until engravingsJson.length()) {
+                                                val value =
+                                                    engravingsJson.getJSONObject("Element_%03d".format(i))
+                                                when (value["type"]) {
+                                                    "NameTagBox", "SingleTextBox", "MultiTextBox", "ShowMeTheMoney" -> item {
+                                                        Text(
+                                                            parse(value.getString("value"))
+                                                        )
+                                                    }
+                                                    "ItemPartBox" -> item {
+                                                        Column() {
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("Element_000")
+                                                                )
+                                                            )
+                                                            Row() {
+                                                                Text(
+                                                                    text = parse(
+                                                                        value.getJSONObject("value")
+                                                                            .getString("Element_001")
+                                                                    )
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                    "EngraveSkillTitle" -> item {
+                                                        Column() {
+                                                            AsyncImage(
+                                                                model = value.getJSONObject("value")
+                                                                    .getJSONObject("slotData")
+                                                                    .getString("iconPath"),
+                                                                contentDescription = "스킬 아이콘"
+                                                            )
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("forceMiddleText")
+                                                                )
+                                                            )
+                                                            Row() {
+                                                                Text(
+                                                                    text = parse(
+                                                                        value.getJSONObject("value")
+                                                                            .getString("leftText")
+                                                                    )
+                                                                )
+                                                                Text(
+                                                                    text = parse(
+                                                                        value.getJSONObject("value")
+                                                                            .getString("name")
+                                                                    )
+                                                                )
+                                                            }
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("rightText")
+                                                                )
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            items(engravingslist.toList()) {
+                if(it.Effects.isNullOrEmpty()) {
+                } else {
+                    for(i in it.Effects.indices) {
+                        Row(Modifier.clickable {
+                            lifecycleScope.launch {
+                                scaffoldState.snackbarHostState.showSnackbar("${it.Effects[i].description}")
+                            }
+                        }) {
+                            Text("${it.Effects[i].name}")
+                        }
+                        Box(Modifier.height(5.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+@Composable
 fun gems(gemslist: SnapshotStateList<charterGems>) {
     var index by remember { mutableStateOf(-1) }
-    Box(Modifier.fillMaxSize()) {
+    if(gemslist.isNullOrEmpty()) {
+        Box(Modifier.fillMaxSize()) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(size = 64.dp)
+                    .align(Alignment.Center),
+                color = Color.Black,
+                strokeWidth = 6.dp
+            )
+        }
+    } else {
+        Box(Modifier.fillMaxSize()) {
             for (i in 0 until gemslist.size) {
                 LazyVerticalGrid(columns = GridCells.Fixed(3),
                     Modifier
@@ -261,11 +905,11 @@ fun gems(gemslist: SnapshotStateList<charterGems>) {
                                 }) {
                             Column() {
                                 AsyncImage(
-                                    "${it1.icon}",
+                                    "${it1?.icon}",
                                     contentDescription = "보석 아이콘",
                                     modifier = Modifier.size(40.dp)
                                 )
-                                Text("${parse(it1.name)}", fontSize = 8.sp)
+                                Text("${parse(it1?.name?: "")}", fontSize = 8.sp)
                             }
                             if (index != -1) {
                                 Dialog(
@@ -282,8 +926,8 @@ fun gems(gemslist: SnapshotStateList<charterGems>) {
                                     ) {
                                         Box(Modifier.fillMaxSize()) {
                                             LazyColumn(Modifier.fillMaxSize()) {
-                                                val js = JSONObject(tootipParse(gemslist[0].Gems[if(index == -1) 0 else index].tooltip))
-                                                val EffectJs = JSONObject(tootipParse(gemslist[0].Effects[if (index == -1) 0 else index].tooltip))
+                                                val js = JSONObject(tootipParse(gemslist[0].Gems[if(index == -1) 0 else index]?.tooltip?: ""))
+                                                val EffectJs = JSONObject(tootipParse(gemslist[0].Effects[if (index == -1) 0 else index]?.tooltip?: ""))
                                                 for (i in 0 until js.length()) {
                                                     val value = js.getJSONObject("Element_%03d".format(i))
                                                     when (value["type"]) {
@@ -335,8 +979,8 @@ fun gems(gemslist: SnapshotStateList<charterGems>) {
                                                     }
                                                 }
                                                 items(gemslist[i].Effects) {
-                                                    if(gemslist[0].Gems[if(index == -1) 0 else index].slot == it.gemSlot) {
-                                                        Log.d("로그로그1", "${it1.slot}  ${it.gemSlot}")
+                                                    if(gemslist[0].Gems[if(index == -1) 0 else index]?.slot == it?.gemSlot) {
+                                                        Log.d("로그로그1", "${it1?.slot}  ${it?.gemSlot}")
                                                         for (i in 0 until EffectJs.length()) {
                                                             val value = EffectJs.getJSONObject("Element_%03d".format(i))
                                                             when (value["type"]) {
@@ -624,8 +1268,7 @@ fun gems(gemslist: SnapshotStateList<charterGems>) {
             }
         }
     }
-
-
+}
 @Composable
 fun avatar(avatarslist: SnapshotStateList<charterAvatars>, charterProfile: charterProfile) {
     Box(
@@ -787,7 +1430,6 @@ fun avatar(avatarslist: SnapshotStateList<charterAvatars>, charterProfile: chart
         }
     }
 }
-
 @Composable
 fun equipment(equipmentlist: SnapshotStateList<charterEquipment>, charterProfile: charterProfile) {
     // openDialog.value = !openDialog.value
@@ -1041,12 +1683,7 @@ fun tootipParse (str: String):String {
 fun profileDetails(colosseums: SnapshotStateList<charterColosseums>, charterProfile: charterProfile) {
     val pagerState = rememberPagerState()
     val coroutineScope = rememberCoroutineScope()
-    Surface(
-        Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(16.dp)) {
-        LazyColumn {
+        LazyColumn(Modifier.padding(16.dp)) {
             item {
                 Column() {
                     Text("서버 이름 : ${charterProfile.ServerName?: ""}")
@@ -1191,12 +1828,11 @@ fun profileDetails(colosseums: SnapshotStateList<charterColosseums>, charterProf
                 }
             }
         }
-    }
-
 }
+
 @Composable
-fun itemslist(items: List<@Composable () -> Unit>) {
-    val text = listOf("장비", "아바타", "젬")
+fun collection(items: List<@Composable () -> Unit>) {
+    val text = listOf("카드", "수집품")
     var index = remember {
         mutableStateOf(0)
     }
@@ -1206,13 +1842,21 @@ fun itemslist(items: List<@Composable () -> Unit>) {
                 Modifier
                     .fillMaxWidth()
                     .height(500.dp)) {
-            items[index.value]()
+                if(items.isNullOrEmpty()) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(size = 64.dp),
+                        color = Color.Black,
+                        strokeWidth = 6.dp
+                    )
+                } else {
+                    items[index.value]()
+                }
             }
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .height(200.dp), contentAlignment = Alignment.BottomCenter) {
-                LazyVerticalGrid(columns = GridCells.Adaptive(minSize = (200/2.7).dp)) {
+                    .height(100.dp), contentAlignment = Alignment.BottomCenter) {
+                LazyVerticalGrid(columns = GridCells.Adaptive(minSize = (200/2).dp)) {
                     text.forEachIndexed { i, s ->
                         item {
                             TextButton(onClick = {index.value = i}) {
@@ -1222,24 +1866,6 @@ fun itemslist(items: List<@Composable () -> Unit>) {
                     }
                 }
             }
-        }
-    }
-}
-
-
-@Composable
-fun skills(skillslist: SnapshotStateList<charterCombatSkills>) {
-    Box() {
-        Column() {
-
-        }
-    }
-}
-@Composable
-fun collection() {
-    Box() {
-        Column() {
-
         }
     }
 }
