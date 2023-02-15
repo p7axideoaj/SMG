@@ -247,7 +247,7 @@ fun profileContent(
             HorizontalPager(count = pages.size, state = pagerState) { page: Int ->
                 val charterItems = listOf<@Composable ()->Unit>( { equipment(equipmentlist, it) }, { avatar(avatarslist, it) }, { gems(gemslist) })
                 val skillItem = listOf<@Composable ()->Unit>( { combatSkill(skillslist) }, { engravings(engravingslist, scaffoldState, lifecycleScope) })
-                val collectionItem = listOf<@Composable ()->Unit>( { card(cardslist) }, { collections(collectibleslist) })
+                val collectionItem = listOf<@Composable ()->Unit>( { card(cardslist,scaffoldState, lifecycleScope) }, { collections(collectibleslist) })
                 val pagelist = mutableListOf<@Composable ()->Unit>(
                     { profileDetails(colosseumslist, it) },
                     { itemslist(charterItems) },
@@ -260,7 +260,11 @@ fun profileContent(
     }
 }
 @Composable
-fun card(cardslist: MutableState<charterCards?>) {
+fun card(
+    cardslist: MutableState<charterCards?>,
+    scaffoldState: ScaffoldState,
+    lifecycleScope: LifecycleCoroutineScope
+) {
     var idx by remember {
         mutableStateOf(0)
     }
@@ -269,7 +273,10 @@ fun card(cardslist: MutableState<charterCards?>) {
             Modifier
                 .fillMaxWidth()
                 .height(400.dp)) {
-            LazyVerticalGrid(GridCells.Fixed(3),Modifier.fillMaxWidth().height(450.dp)) {
+            LazyVerticalGrid(GridCells.Fixed(3),
+                Modifier
+                    .fillMaxWidth()
+                    .height(450.dp)) {
                 if (cardslist.value?.Cards.isNullOrEmpty()) {
                     item { Text(text = "정보를 불러오지 못했습니다") }
                 } else {
@@ -277,13 +284,61 @@ fun card(cardslist: MutableState<charterCards?>) {
                         if(cardslist.value?.Effects.isNullOrEmpty()) {
                             Text(text = "적용중인 카드셋가 없습니다")
                         }else {
+                            var index by remember { mutableStateOf(-1) }
                             if(cardslist.value?.Effects?.get(idx)?.cardSlots?.contains(it.slot)!!) {
-                                Column() {
+                                Column(
+                                    Modifier.clickable {
+                                        index = idx1
+                                    }
+                                ) {
                                     AsyncImage(model = "${it.icon}", contentDescription = "${it.name}")
                                     Text(text = "${it.name}")
                                     Text(text = "${it.awakeCount} / ${it.awakeTotal}")
                                 }
+                                if (index != -1) {
+                                    Dialog(
+                                        onDismissRequest = {
+                                            index = -1
+                                        }
+                                    ) {
+                                        Surface(
+                                            modifier = Modifier
+                                                .width(250.dp)
+                                                .height(500.dp)
+                                                .padding(10.dp),
+                                            color = Color.White
+                                        ) {
+                                            Box(Modifier.fillMaxSize()) {
+                                                LazyColumn(Modifier.fillMaxSize()) {
+                                                    val cardJson =
+                                                        JSONObject(it.Tooltip)
+                                                    for (i in 0 until cardJson.length()) {
+                                                        val value =
+                                                            cardJson.getJSONObject("Element_%03d".format(i))
+                                                        when (value["type"]) {
+                                                            "NameTagBox", "SingleTextBox" -> item {
+                                                                Text(
+                                                                    parse(value.getString("value"))
+                                                                )
+                                                            }
+                                                            "Card" -> item {
+                                                                Column() {
+                                                                    AsyncImage(
+                                                                        model = value.getJSONObject("value").getJSONObject("iconData").getString("iconPath"),
+                                                                        contentDescription = "카드 이미지"
+                                                                    )
+                                                                    Text(text = "${value.getJSONObject("value").getInt("awakeCount")} / ${value.getJSONObject("value").getInt("awakeTotal")}")
+                                                                }   
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
+
                         }
                     }
                 }
