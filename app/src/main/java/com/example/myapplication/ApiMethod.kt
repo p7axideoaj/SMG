@@ -44,6 +44,72 @@ fun getJSONNewsDate(cList: MutableList<newsData>, ctx: Context) {
         }
     })
 }
+fun getJSONNewsNoti(cList: MutableList<NewsNotiData>) {
+    val retrofit = Retrofit.Builder()
+        .baseUrl("https://developer-lostark.game.onstove.com/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
+
+    val call: Call<List<NewsNotiData>> = retrofitAPIMethod.getNotice()
+
+    call.enqueue(object : Callback<List<NewsNotiData>?> {
+        override fun onResponse(call: Call<List<NewsNotiData>?>, response: Response<List<NewsNotiData>?>) {
+            Log.d("아아","${response.code()}")
+            if(response.isSuccessful) {
+                var list: List<NewsNotiData> = response.body()!!
+                Log.d("아아","${list}")
+                if(cList.isNotEmpty()) {
+                    cList.clear()
+                }
+                cList.addAll(list)
+
+            } else if(response.code() == 429){
+
+            } else {
+
+            }
+        }
+
+        override fun onFailure(call: Call<List<NewsNotiData>?>, t: Throwable) {
+
+        }
+    })
+}
+fun getJSONChaterSiblings(cList: MutableList<SiblingsData>, username: String) {
+    val retrofit = Retrofit.Builder()
+        .baseUrl("https://developer-lostark.game.onstove.com/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
+
+    val call: Call<List<SiblingsData>> = retrofitAPIMethod.getCharterSiblings(username)
+
+    call.enqueue(object : Callback<List<SiblingsData>?> {
+        override fun onResponse(call: Call<List<SiblingsData>?>, response: Response<List<SiblingsData>?>) {
+            Log.d("아아","${response.code()}")
+            if(response.isSuccessful) {
+                var list: List<SiblingsData> = response.body()!!
+                Log.d("실블실블","${list}")
+                if(cList.isNotEmpty()) {
+                    cList.clear()
+                }
+                cList.addAll(list)
+
+            } else if(response.code() == 429){
+
+            } else {
+
+            }
+        }
+
+        override fun onFailure(call: Call<List<SiblingsData>?>, t: Throwable) {
+
+        }
+    })
+}
 fun getJSONProfile(cList: MutableList<charterProfile>, ctx: Context, username: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
@@ -59,7 +125,7 @@ fun getJSONProfile(cList: MutableList<charterProfile>, ctx: Context, username: S
             Log.d("아아","${response.code()}")
             if(response.isSuccessful) {
                 var cp: charterProfile = response.body()!!
-                Log.d("아아","${cp}\nㅁㅁㅁㅁ")
+                Log.d("캐릭터캐릭터","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
                 }
@@ -77,6 +143,7 @@ fun getJSONProfile(cList: MutableList<charterProfile>, ctx: Context, username: S
         }
     })
 }
+
 fun getJSONProfileAvatars(cList: MutableList<charterAvatars>, ctx: Context, username: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")

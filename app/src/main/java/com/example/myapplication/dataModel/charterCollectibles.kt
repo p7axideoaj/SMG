@@ -7,6 +7,10 @@ data class charterCollectibles(
     @SerializedName("Icon") val Icon: String?,
     @SerializedName("Point") val Point: Int?,
     @SerializedName("MaxPoint") val MaxPoint: Int?,
-    @SerializedName("CollectiblePoints") val CollectiblePoints: List<Map<String,*>>,
-
+    @SerializedName("CollectiblePoints") val CollectiblePoints: List<CollectiblePoints>,
+)
+data class CollectiblePoints(
+    @SerializedName("PointName") val pointName: String?,
+    @SerializedName("Point") val point: Int?,
+    @SerializedName("MaxPoint") val maxPoint: Int?,
 )

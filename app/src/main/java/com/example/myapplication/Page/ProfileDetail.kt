@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -50,6 +51,8 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import androidx.compose.runtime.getValue
+
 
 @ExperimentalPagerApi
 @Composable
@@ -204,10 +207,21 @@ fun profileContent(
     val gemslist = remember {
         mutableStateListOf<charterGems>()
     }
+    val siblingList = remember {
+        mutableStateListOf<SiblingsData>()
+    }
+    var charList = remember {
+        mutableStateListOf<charterProfile>()
+    }
+    val charArr = remember {
+        mutableListOf<SnapshotStateList<charterProfile>>()
+    }
     val scope = MainScope()
     DisposableEffect(0){
         scope.launch {
             while (true) {
+                getJSONChaterSiblings(siblingList, username)
+                delay(500)
                 getJSONProfileEquipment(equipmentlist,context,username)
                 getJSONProfileAvatars(avatarslist, context, username)
                 getJSONProfileCollectibles(collectibleslist,context,username)
@@ -216,6 +230,16 @@ fun profileContent(
                 getJSONProfileGems(gemslist,context,username)
                 getJSONProfileCards(cardslist, context, username)
                 getJSONProfileCombatSkills(skillslist,context,username)
+                for(i in 0 until siblingList.size) {
+                    if(username != siblingList[i].characterName) {
+                        getJSONProfile(charList, context, siblingList[i].characterName)
+                        delay(500)
+                        if(charArr.size != siblingList.size && !charList.isNullOrEmpty()) {
+                            charArr.add(charList)
+                        }
+                        charList.clear()
+                    }
+                }
                 delay(6000)
             }
         }
@@ -226,35 +250,64 @@ fun profileContent(
     val pages = listOf("캐릭터 정보", "아이템", "스킬", "수집품")
     val pagerState = rememberPagerState()
     val coroutineScope = rememberCoroutineScope()
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .height(600.dp)
-            .padding(16.dp)
-            .border(1.dp, Color.Black, RoundedCornerShape(10.dp))) {
-        Column() {
-            TabRow(selectedTabIndex = pagerState.currentPage, indicator = {
-                    tabPositions -> TabRowDefaults.Indicator(Modifier.pagerTabIndicatorOffset(pagerState, tabPositions))
-            }) {
-                pages.forEachIndexed { index, s ->  Tab(selected = pagerState.currentPage == index, onClick = {
-                    coroutineScope.launch {
-                        pagerState.scrollToPage(index)
+    Column() {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .padding(16.dp)) {
+            if(charArr.size != siblingList.size-1 || charArr.isNullOrEmpty()) {
+                Text("정보를 불러오는중입니다.")
+            } else {
+            LazyVerticalGrid(columns = GridCells.Fixed(3), Modifier) {
+                itemsIndexed(siblingList.toList()) { i, s ->
+                    if(it.CharacterName != s.characterName) {
+                        if(i < charArr.size) {
+                                Box() {
+                                    Column {
+                                        AsyncImage(model = "${charArr[i].last().CharacterImage }}", contentDescription = "캐릭터 이미지")
+                                        Text("캐릭터이름 : ${s.characterName}", fontSize = 8.sp)
+                                        Text("서버이름 : ${s.serverName}", fontSize = 8.sp)
+                                        Text("${s.characterClassName} Lv.${s.characterLevel}", fontSize = 8.sp)
+                                        Text("아이템레벨 : ${s.itemAvgLevel}", fontSize = 8.sp)
+                                    }
+                                }
+                            }
+                        }
                     }
-                }){
-                    Text(text = s)
-                }}
+                }
             }
-            HorizontalPager(count = pages.size, state = pagerState) { page: Int ->
-                val charterItems = listOf<@Composable ()->Unit>( { equipment(equipmentlist, it) }, { avatar(avatarslist, it) }, { gems(gemslist) })
-                val skillItem = listOf<@Composable ()->Unit>( { combatSkill(skillslist) }, { engravings(engravingslist, scaffoldState, lifecycleScope) })
-                val collectionItem = listOf<@Composable ()->Unit>( { card(cardslist,scaffoldState, lifecycleScope) }, { collections(collectibleslist) })
-                val pagelist = mutableListOf<@Composable ()->Unit>(
-                    { profileDetails(colosseumslist, it) },
-                    { itemslist(charterItems) },
-                    { skills(skillItem) },
-                    { collection(collectionItem) },
-                )
-                pagelist[page]()
+        }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(600.dp)
+                .padding(16.dp)
+                .border(1.dp, Color.Black, RoundedCornerShape(10.dp))) {
+            Column() {
+                TabRow(selectedTabIndex = pagerState.currentPage, indicator = {
+                        tabPositions -> TabRowDefaults.Indicator(Modifier.pagerTabIndicatorOffset(pagerState, tabPositions))
+                }) {
+                    pages.forEachIndexed { index, s ->  Tab(selected = pagerState.currentPage == index, onClick = {
+                        coroutineScope.launch {
+                            pagerState.scrollToPage(index)
+                        }
+                    }){
+                        Text(text = s)
+                    }}
+                }
+                HorizontalPager(count = pages.size, state = pagerState) { page: Int ->
+                    val charterItems = listOf<@Composable ()->Unit>( { equipment(equipmentlist, it) }, { avatar(avatarslist, it) }, { gems(gemslist) })
+                    val skillItem = listOf<@Composable ()->Unit>( { combatSkill(skillslist) }, { engravings(engravingslist, scaffoldState, lifecycleScope) })
+                    val collectionItem = listOf<@Composable ()->Unit>( { card(cardslist) }, { collections(collectibleslist) })
+                    val pagelist = mutableListOf<@Composable ()->Unit>(
+                        { profileDetails(colosseumslist, it) },
+                        { itemslist(charterItems) },
+                        { skills(skillItem) },
+                        { collection(collectionItem) },
+                    )
+                    pagelist[page]()
+                }
             }
         }
     }
@@ -262,8 +315,6 @@ fun profileContent(
 @Composable
 fun card(
     cardslist: MutableState<charterCards?>,
-    scaffoldState: ScaffoldState,
-    lifecycleScope: LifecycleCoroutineScope
 ) {
     var idx by remember {
         mutableStateOf(0)
@@ -366,7 +417,50 @@ fun card(
 }
 @Composable
 fun collections(collectionslist: SnapshotStateList<charterCollectibles>) {
-
+    LazyColumn() {
+        items(collectionslist.toList()) {
+            var expandableState by remember {
+                mutableStateOf(false)
+            }
+            val rotate by animateFloatAsState(targetValue = if(expandableState) 180f else 0f)
+            Card(
+                Modifier
+                    .fillMaxWidth()
+                    .animateContentSize(animationSpec = tween(durationMillis = 100,))
+                    .padding(10.dp)) {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp)) {
+                    Row(Modifier
+                        .fillMaxWidth()) {
+                        AsyncImage(model = "${it.Icon}", contentDescription = "수집품 이미지",  Modifier.weight(1f))
+                        Text(text = "${it.Type}",  Modifier.weight(1f))
+                        Text(text = "${it.Point} / ${it.MaxPoint}",  Modifier.weight(1f))
+                        IconButton(onClick = { expandableState = !expandableState},
+                            Modifier
+                                .weight(1f)
+                                .rotate(rotate)) {
+                            Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "열기")
+                        }
+                    }
+                    AnimatedVisibility(visible = expandableState) {
+                        Column(Modifier.padding(16.dp)) {
+                            for (i in it.CollectiblePoints.indices) {
+                                Box(Modifier.fillMaxWidth()) {
+                                    Row() {
+                                        Text("${it.CollectiblePoints[i].pointName}")
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text("${it.CollectiblePoints[i].point} / ${it.CollectiblePoints[i].maxPoint}")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -1793,8 +1887,10 @@ fun profileDetails(colosseums: SnapshotStateList<charterColosseums>, charterProf
                 Column(Modifier.fillMaxWidth()) {
                     Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
                         Text("${it.Colosseums.last().seasonName}")
-                        Text("현재 순위 : ${it.Rank?: "없음"}")
+                        Spacer(Modifier.width(10.dp))
+                        Text("현재 순위 : ${if(it.Rank == 0) "없음" else it.Rank?: "없음"}")
                     }
+                    Spacer(Modifier.height(5.dp))
                     HorizontalPager( // 가로로 스크롤 가능한 pager
                         count = it.Colosseums.size, // 페이지 수
                         state = pagerState // PagerState

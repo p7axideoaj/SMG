@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -54,9 +55,9 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             prefs = sharedHelper(context)
                 NavHost(navController = navController, startDestination = "home") {
-
                     composable("home") { Homepage(navController, context, prefs) }
                     composable("search") { SerachPageHome(navController, prefs, context) }
+                    composable("noti") { NotiPage(navController, context)}
                     composable("profileDetail/{username}") { it ->
                         it.arguments?.getString("username")
                             ?.let { it1 -> ProfileDetailHome(navController, it1, context, lifecycleScope)}
@@ -96,6 +97,10 @@ fun Homepage(navController: NavController, context: Context, prefs: sharedHelper
         Modifier
             .fillMaxSize()
             , horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(Modifier.clickable { navController.navigate("noti") }) {
+            Icon(Icons.Default.Notifications, contentDescription = "공지")
+            Text(text = "공지사항 보러가기")
+        }
         Box(Modifier.clickable { navController.navigate("search") }) {
             Row(horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(text = "검색")
@@ -106,19 +111,19 @@ fun Homepage(navController: NavController, context: Context, prefs: sharedHelper
             mutableStateOf(prefs.getString("name"))
         }
         val pagerState = rememberPagerState()
-
-                HorizontalPager(
-                    modifier = Modifier
-                        .height(100.dp)
-                        .fillMaxWidth(), count = list.size, verticalAlignment = Alignment.Top, state = pagerState) { page ->
-                    PageImage(list, list[page], page, context)
-                }
-                HorizontalPagerIndicator(pagerState = pagerState, Modifier.padding(5.dp))
+        HorizontalPager(
+            modifier = Modifier
+                .height(100.dp)
+                .fillMaxWidth(), count = list.size, verticalAlignment = Alignment.Top, state = pagerState) { page ->
+            PageImage(list, list[page], page, context)
+        }
+        HorizontalPagerIndicator(pagerState = pagerState, Modifier.padding(5.dp))
         if (name.isNullOrEmpty()) {
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .height(100.dp)) {
+                    .height(100.dp)
+                    .align(Alignment.CenterHorizontally)) {
                 TextButton(onClick = {
                     navController.navigate("addUser")
                 }) {
@@ -130,6 +135,7 @@ fun Homepage(navController: NavController, context: Context, prefs: sharedHelper
                 Modifier
                     .fillMaxWidth()
                     .height(100.dp)
+                    .align(Alignment.CenterHorizontally)
             ) {
                 LazyRow() {
                     items(userlist) {
@@ -148,6 +154,7 @@ fun Homepage(navController: NavController, context: Context, prefs: sharedHelper
                 }
             }
         }
+
     }
 
 }
@@ -155,7 +162,6 @@ fun Homepage(navController: NavController, context: Context, prefs: sharedHelper
 @ExperimentalPagerApi
 @Composable
 fun PageImage(list: SnapshotStateList<newsData>, news: newsData, page: Int, context: Context) {
-
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(Modifier.clickable(onClick = {
             val urlIntent = Intent(

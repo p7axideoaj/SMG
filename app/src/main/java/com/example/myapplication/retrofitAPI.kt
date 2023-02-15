@@ -15,11 +15,17 @@ interface retrofitAPI {
     @GET("news/events")
     fun getEvent(): Call<List<newsData>>
     @Headers("$token")
+    @GET("news/notices")
+    fun getNotice(): Call<List<NewsNotiData>>
+    @Headers("$token")
     @GET("auctions/options")
     fun getAuctions(): Call<auctionsData>
     @Headers("$token")
     @GET("markets/options")
     fun getMarkets(): Call<marketsData>
+    @Headers("$token")
+    @GET("characters/{username}/siblings")
+    fun getCharterSiblings(@Path("username") username:String): Call<List<SiblingsData>>
     @Headers("$token")
     @GET("$url/profiles")
     fun getCharterProfile(@Path("username") username:String): Call<charterProfile>
