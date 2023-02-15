@@ -77,7 +77,7 @@ fun Homepage(navController: NavController, context: Context, prefs: sharedHelper
         mutableStateListOf<newsData>()
     }
     val userlist = remember {
-        mutableStateListOf<charterProfile>()
+        mutableStateListOf<charterProfile?>()
     }
     val scope = MainScope()
     DisposableEffect(0){
@@ -139,16 +139,20 @@ fun Homepage(navController: NavController, context: Context, prefs: sharedHelper
             ) {
                 LazyRow() {
                     items(userlist) {
-                        AsyncImage(model = "${it.CharacterImage}", contentDescription = "image")
-                        Column() {
-                            Text(text = "${it.CharacterName}")
-                            Text(text = "${if(it.Title.isNullOrEmpty()) "" else it.Title}")
-                        }
-                        IconButton(onClick = {
-                            prefs.remove("name")
-                            name = prefs.getString("name")
-                        }) {
-                            Icon(imageVector = Icons.Default.Delete, contentDescription = "delete")
+                        if(it == null) {
+                            Text(text = "등록되지 않은 모험가입니다.")
+                        } else {
+                            AsyncImage(model = "${it.CharacterImage}", contentDescription = "image")
+                            Column() {
+                                Text(text = "${it.CharacterName}")
+                                Text(text = "${if(it.Title.isNullOrEmpty()) "" else it.Title}")
+                            }
+                            IconButton(onClick = {
+                                prefs.remove("name")
+                                name = prefs.getString("name")
+                            }) {
+                                Icon(imageVector = Icons.Default.Delete, contentDescription = "delete")
+                            }   
                         }
                     }
                 }

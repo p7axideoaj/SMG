@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -52,6 +51,8 @@ import org.json.JSONObject
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import androidx.compose.runtime.getValue
+import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 
 
 @ExperimentalPagerApi
@@ -64,7 +65,7 @@ fun ProfileDetailHome(
 ) {
 
     val list = remember {
-        mutableStateListOf<charterProfile>()
+        mutableStateListOf<charterProfile?>()
     }
 //    var url:String
     val scope = MainScope()
@@ -84,14 +85,14 @@ fun ProfileDetailHome(
 
     db.deleteData(str?.name)
     list.map {
-        db.addSearchData(searchData = SearchData(time = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC),name = it.CharacterName, title = it.Title?: "", image = it.CharacterImage?: ""))
+        db.addSearchData(searchData = SearchData(time = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC),name = it!!.CharacterName, title = it!!.Title?: "", image = it!!.CharacterImage?: ""))
     }
     val scaffoldState = rememberScaffoldState()
     Scaffold(scaffoldState = scaffoldState) {
         LazyColumn() {
             items(list) {
-                profile(it)
-                profileContent(it, context, username, scaffoldState, lifecycleScope)
+                profile(it!!)
+                profileContent(it!!, context, username, scaffoldState, lifecycleScope, navController)
             }
         }
     }
@@ -112,8 +113,8 @@ fun profile(it: charterProfile) {
                 "배틀마스터" ->R.drawable.battle_master
                 "버서커" -> R.drawable.berserker
                 "블레이드" -> R.drawable.blade
-                "블레스터" -> R.drawable.blaster
-                "데모닉" -> R.drawable.demonic
+                "블스터" -> R.drawable.blaster
+                "데레모닉" -> R.drawable.demonic
                 "디스트로이어" -> R.drawable.destroyed
                 "데빌헌터" -> R.drawable.devil_hunter
                 "도화가" -> R.drawable.drawing_artist
@@ -172,20 +173,21 @@ fun profileContent(
     context: Context,
     username: String,
     scaffoldState: ScaffoldState,
-    lifecycleScope: LifecycleCoroutineScope
+    lifecycleScope: LifecycleCoroutineScope,
+    navController: NavHostController
 ) {
     // it : 캐릭터 정보
     // 스킬 정보
     val skillslist = remember {
-        mutableStateListOf<charterCombatSkills>()
+        mutableStateListOf<charterCombatSkills?>()
     }
     // 아바타 정보
     val avatarslist = remember {
-        mutableStateListOf<charterAvatars>()
+        mutableStateListOf<charterAvatars?>()
     }
     // 장비 정보
     val equipmentlist = remember {
-        mutableStateListOf<charterEquipment>()
+        mutableStateListOf<charterEquipment?>()
     }
     // 카드 정보
     val cardslist = remember {
@@ -193,28 +195,26 @@ fun profileContent(
     }
     // 수집품 정보
     val collectibleslist = remember {
-        mutableStateListOf<charterCollectibles>()
+        mutableStateListOf<charterCollectibles?>()
     }
     // 투기장 정보
     val colosseumslist = remember {
-        mutableStateListOf<charterColosseums>()
+        mutableStateListOf<charterColosseums?>()
     }
     // 각인 정보
     val engravingslist = remember {
-        mutableStateListOf<charterEngravings>()
+        mutableStateListOf<charterEngravings?>()
     }
     // 보석 정보
     val gemslist = remember {
-        mutableStateListOf<charterGems>()
+        mutableStateListOf<charterGems?>()
     }
     val siblingList = remember {
         mutableStateListOf<SiblingsData>()
     }
-    var charList = remember {
-        mutableStateListOf<charterProfile>()
-    }
+
     val charArr = remember {
-        mutableListOf<SnapshotStateList<charterProfile>>()
+        mutableListOf<List<charterProfile?>>()
     }
     val scope = MainScope()
     DisposableEffect(0){
@@ -232,12 +232,10 @@ fun profileContent(
                 getJSONProfileCombatSkills(skillslist,context,username)
                 for(i in 0 until siblingList.size) {
                     if(username != siblingList[i].characterName) {
-                        getJSONProfile(charList, context, siblingList[i].characterName)
-                        delay(500)
-                        if(charArr.size != siblingList.size && !charList.isNullOrEmpty()) {
-                            charArr.add(charList)
+                        if(charArr.size != siblingList.size) {
+                            charArr.add(getJSONProfileRetrunList(context, siblingList[i].characterName))
                         }
-                        charList.clear()
+                        Log.d("씨루떡떡", "${charArr}")
                     }
                 }
                 delay(6000)
@@ -256,24 +254,31 @@ fun profileContent(
                 .fillMaxWidth()
                 .height(300.dp)
                 .padding(16.dp)) {
-            if(charArr.size != siblingList.size-1 || charArr.isNullOrEmpty()) {
+            if(charArr.size == 0 || charArr.isNullOrEmpty()) {
                 Text("정보를 불러오는중입니다.")
             } else {
-            LazyVerticalGrid(columns = GridCells.Fixed(3), Modifier) {
-                itemsIndexed(siblingList.toList()) { i, s ->
-                    if(it.CharacterName != s.characterName) {
-                        if(i < charArr.size) {
-                                Box() {
-                                    Column {
-                                        AsyncImage(model = "${charArr[i].last().CharacterImage }}", contentDescription = "캐릭터 이미지")
-                                        Text("캐릭터이름 : ${s.characterName}", fontSize = 8.sp)
-                                        Text("서버이름 : ${s.serverName}", fontSize = 8.sp)
-                                        Text("${s.characterClassName} Lv.${s.characterLevel}", fontSize = 8.sp)
-                                        Text("아이템레벨 : ${s.itemAvgLevel}", fontSize = 8.sp)
-                                    }
+            LazyVerticalGrid(columns = GridCells.Fixed(3)) {
+                itemsIndexed(siblingList.toList().filter { s -> it.CharacterName != s.characterName }) { i, s ->
+                    Box(Modifier.clickable { navController.navigate("profileDetail/${s.characterName}") }) {
+                        Column {
+                            if(charArr[i][0]!!.CharacterImage == null) {
+                                Box(){
+                                    Text("이미지 없음")
                                 }
+                            } else {
+                                if(charArr[i][0]!!.CharacterImage!!.contains("https://img.lostark.co.kr/armory")) {
+                                    AsyncImage(model = "${charArr[i][0]!!.CharacterImage!!}", contentDescription = "캐릭터 이미지")
+                                } else {
+                                    Image(painter = rememberAsyncImagePainter("${charArr[i][0]!!.CharacterImage!!.replace("PNG","png")}"), contentDescription = "캐릭터 이미지")
+                                }
+
                             }
+                            Text("캐릭터이름 : ${s.characterName}", fontSize = 8.sp)
+                            Text("서버이름 : ${s.serverName}", fontSize = 8.sp)
+                            Text("${s.characterClassName} Lv.${s.characterLevel}", fontSize = 8.sp)
+                            Text("아이템레벨 : ${s.itemAvgLevel}", fontSize = 8.sp)
                         }
+                    }
                     }
                 }
             }
@@ -416,47 +421,56 @@ fun card(
     }
 }
 @Composable
-fun collections(collectionslist: SnapshotStateList<charterCollectibles>) {
+fun collections(collectionslist: SnapshotStateList<charterCollectibles?>) {
     LazyColumn() {
-        items(collectionslist.toList()) {
-            var expandableState by remember {
-                mutableStateOf(false)
-            }
-            val rotate by animateFloatAsState(targetValue = if(expandableState) 180f else 0f)
-            Card(
-                Modifier
-                    .fillMaxWidth()
-                    .animateContentSize(animationSpec = tween(durationMillis = 100,))
-                    .padding(10.dp)) {
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(10.dp)) {
-                    Row(Modifier
-                        .fillMaxWidth()) {
-                        AsyncImage(model = "${it.Icon}", contentDescription = "수집품 이미지",  Modifier.weight(1f))
-                        Text(text = "${it.Type}",  Modifier.weight(1f))
-                        Text(text = "${it.Point} / ${it.MaxPoint}",  Modifier.weight(1f))
-                        IconButton(onClick = { expandableState = !expandableState},
+        if(collectionslist == null) {
+            item {Text(text = "수집품이 없음")}
+        } else {
+            items(collectionslist.toList()) {
+                var expandableState by remember {
+                    mutableStateOf(false)
+                }
+                val rotate by animateFloatAsState(targetValue = if(expandableState) 180f else 0f)
+                if(it == null) {
+                    Text("수집품 없음")
+                }else {
+                    Card(
+                        Modifier
+                            .fillMaxWidth()
+                            .animateContentSize(animationSpec = tween(durationMillis = 100,))
+                            .padding(10.dp)) {
+                        Column(
                             Modifier
-                                .weight(1f)
-                                .rotate(rotate)) {
-                            Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "열기")
-                        }
-                    }
-                    AnimatedVisibility(visible = expandableState) {
-                        Column(Modifier.padding(16.dp)) {
-                            for (i in it.CollectiblePoints.indices) {
-                                Box(Modifier.fillMaxWidth()) {
-                                    Row() {
-                                        Text("${it.CollectiblePoints[i].pointName}")
-                                        Spacer(modifier = Modifier.width(3.dp))
-                                        Text("${it.CollectiblePoints[i].point} / ${it.CollectiblePoints[i].maxPoint}")
+                                .fillMaxWidth()
+                                .padding(10.dp)) {
+                            Row(Modifier
+                                .fillMaxWidth()) {
+                                AsyncImage(model = "${it.Icon}", contentDescription = "수집품 이미지",  Modifier.weight(1f))
+                                Text(text = "${it.Type}",  Modifier.weight(1f))
+                                Text(text = "${it.Point} / ${it.MaxPoint}",  Modifier.weight(1f))
+                                IconButton(onClick = { expandableState = !expandableState},
+                                    Modifier
+                                        .weight(1f)
+                                        .rotate(rotate)) {
+                                    Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "열기")
+                                }
+                            }
+                            AnimatedVisibility(visible = expandableState) {
+                                Column(Modifier.padding(16.dp)) {
+                                    for (i in it.CollectiblePoints.indices) {
+                                        Box(Modifier.fillMaxWidth()) {
+                                            Row() {
+                                                Text("${it.CollectiblePoints[i].pointName}")
+                                                Spacer(modifier = Modifier.width(3.dp))
+                                                Text("${it.CollectiblePoints[i].point} / ${it.CollectiblePoints[i].maxPoint}")
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+
                 }
             }
         }
@@ -534,389 +548,50 @@ fun skills(items: List<@Composable () -> Unit>) {
     }
 }
 @Composable
-fun combatSkill(skillslist: SnapshotStateList<charterCombatSkills>) {
+fun combatSkill(skillslist: SnapshotStateList<charterCombatSkills?>) {
     Log.d("돼지돼지", "${skillslist}")
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(16.dp)) {
-        var index by remember { mutableStateOf(-1) }
-        LazyVerticalGrid(columns = GridCells.Fixed(4),
+    if(skillslist.isNullOrEmpty()) {
+        Text("착용중인 스킬이없습니다")
+    } else {
+        Column(
             Modifier
-                .fillMaxSize()) {
-            itemsIndexed(skillslist.toList()) { idx, it ->
-                Column(Modifier.clickable {
-                    Log.d("인덱", "${idx}")
-                    index = idx
-                }) {
-                    AsyncImage("${it.icon}", contentDescription = "스킬 이미지")
-                    Text("${it.name}")
-                    Box(Modifier.height(5.dp))
-                    if (it.rune == null) {
-                        Box(
-                            Modifier
-                                .width(20.dp)
-                                .height(40.dp)
-                        ) {
-                        }
+                .fillMaxSize()
+                .padding(16.dp)) {
+            var index by remember { mutableStateOf(-1) }
+            LazyVerticalGrid(columns = GridCells.Fixed(4),
+                Modifier
+                    .fillMaxSize()) {
+                itemsIndexed(skillslist.toList()) { idx, it ->
+                    if(it == null) {
+                        Text("스킬없음")
                     } else {
-                        Box(
-                            Modifier
-                                .width(40.dp)
-                                .height(60.dp)
-                        ) {
-                            Column(Modifier.fillMaxSize()) {
-                                AsyncImage("${it.rune.icon}", contentDescription = "룬 이미지")
-                                Text("${it.rune.name}")
-                            }
-                        }
-                    }
-                }
-                if (index != -1) {
-                    Dialog(
-                        onDismissRequest = {
-                            index = -1
-                        }
-                    ) {
-                        Surface(
-                            modifier = Modifier
-                                .width(250.dp)
-                                .padding(10.dp),
-                            color = Color.White
-                        ) {
-                            Box(Modifier.fillMaxSize()) {
-                                LazyColumn(Modifier.fillMaxSize()) {
-                                    val skillJson =
-                                        JSONObject(skillslist.toList()[if (index == -1) 0 else index].tooltip)
-                                    for (i in 0 until skillJson.length()) {
-                                        val value =
-                                            skillJson.getJSONObject("Element_%03d".format(i))
-                                        when (value["type"]) {
-                                            "NameTagBox", "SingleTextBox", "MultiTextBox", "ShowMeTheMoney" -> item {
-                                                Text(
-                                                    parse(value.getString("value"))
-                                                )
-                                            }
-                                            "ItemPartBox" -> item {
-                                                Column() {
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("Element_000")
-                                                        )
-                                                    )
-                                                    Row() {
-                                                        Text(
-                                                            text = parse(
-                                                                value.getJSONObject("value")
-                                                                    .getString("Element_001")
-                                                            )
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                            "TripodSkillCustom" -> item {
-                                                Column() {
-                                                    if (!value.getJSONObject("value")
-                                                            .getJSONObject("Element_000")
-                                                            .getBoolean("lock")
-                                                    ) {
-                                                        AsyncImage(
-                                                            model = value.getJSONObject(
-                                                                "value"
-                                                            )
-                                                                .getJSONObject("Element_000")
-                                                                .getJSONObject("slotData")
-                                                                .getString("iconPath"),
-                                                            contentDescription = "스킬 아이콘"
-                                                        )
-                                                        Text(
-                                                            "${
-                                                                parse(
-                                                                    value.getJSONObject(
-                                                                        "value"
-                                                                    )
-                                                                        .getJSONObject(
-                                                                            "Element_000"
-                                                                        )
-                                                                        .getString(
-                                                                            "desc"
-                                                                        )
-                                                                )
-                                                            } ${
-                                                                parse(
-                                                                    value.getJSONObject(
-                                                                        "value"
-                                                                    )
-                                                                        .getJSONObject(
-                                                                            "Element_000"
-                                                                        )
-                                                                        .getString(
-                                                                            "name"
-                                                                        )
-                                                                )
-                                                            }"
-                                                        )
-                                                        Text(
-                                                            "${
-                                                                parse(
-                                                                    value.getJSONObject(
-                                                                        "value"
-                                                                    )
-                                                                        .getJSONObject(
-                                                                            "Element_000"
-                                                                        )
-                                                                        .getString(
-                                                                            "tier"
-                                                                        )
-                                                                )
-                                                            }"
-                                                        )
-                                                    } else {
-                                                        Text(
-                                                            "${
-                                                                parse(
-                                                                    value.getJSONObject(
-                                                                        "value"
-                                                                    )
-                                                                        .getJSONObject(
-                                                                            "Element_000"
-                                                                        )
-                                                                        .getString(
-                                                                            "desc"
-                                                                        )
-                                                                )
-                                                            }"
-                                                        )
-                                                    }
-                                                    if (!value.getJSONObject("value")
-                                                            .getJSONObject("Element_001")
-                                                            .getBoolean("lock")
-                                                    ) {
-                                                        AsyncImage(
-                                                            model = value.getJSONObject(
-                                                                "value"
-                                                            )
-                                                                .getJSONObject("Element_001")
-                                                                .getJSONObject("slotData")
-                                                                .getString("iconPath"),
-                                                            contentDescription = "스킬 아이콘"
-                                                        )
-                                                        Text(
-                                                            "${
-                                                                parse(
-                                                                    value.getJSONObject(
-                                                                        "value"
-                                                                    )
-                                                                        .getJSONObject(
-                                                                            "Element_001"
-                                                                        )
-                                                                        .getString(
-                                                                            "desc"
-                                                                        )
-                                                                )
-                                                            } ${
-                                                                parse(
-                                                                    value.getJSONObject(
-                                                                        "value"
-                                                                    )
-                                                                        .getJSONObject(
-                                                                            "Element_001"
-                                                                        )
-                                                                        .getString(
-                                                                            "name"
-                                                                        )
-                                                                )
-                                                            }"
-                                                        )
-                                                        Text(
-                                                            "${
-                                                                parse(
-                                                                    value.getJSONObject(
-                                                                        "value"
-                                                                    )
-                                                                        .getJSONObject(
-                                                                            "Element_001"
-                                                                        )
-                                                                        .getString(
-                                                                            "tier"
-                                                                        )
-                                                                )
-                                                            }"
-                                                        )
-                                                    } else {
-                                                        Text(
-                                                            "${
-                                                                parse(
-                                                                    value.getJSONObject(
-                                                                        "value"
-                                                                    )
-                                                                        .getJSONObject(
-                                                                            "Element_001"
-                                                                        )
-                                                                        .getString(
-                                                                            "desc"
-                                                                        )
-                                                                )
-                                                            }"
-                                                        )
-                                                    }
-                                                    if (!value.getJSONObject("value")
-                                                            .getJSONObject("Element_002")
-                                                            .getBoolean("lock")
-                                                    ) {
-                                                        AsyncImage(
-                                                            model = value.getJSONObject(
-                                                                "value"
-                                                            )
-                                                                .getJSONObject("Element_002")
-                                                                .getJSONObject("slotData")
-                                                                .getString("iconPath"),
-                                                            contentDescription = "스킬 아이콘"
-                                                        )
-                                                        Text(
-                                                            "${
-                                                                parse(
-                                                                    value.getJSONObject(
-                                                                        "value"
-                                                                    )
-                                                                        .getJSONObject(
-                                                                            "Element_002"
-                                                                        )
-                                                                        .getString(
-                                                                            "desc"
-                                                                        )
-                                                                )
-                                                            } ${
-                                                                parse(
-                                                                    value.getJSONObject(
-                                                                        "value"
-                                                                    )
-                                                                        .getJSONObject(
-                                                                            "Element_002"
-                                                                        )
-                                                                        .getString(
-                                                                            "name"
-                                                                        )
-                                                                )
-                                                            }"
-                                                        )
-                                                        Text(
-                                                            "${
-                                                                parse(
-                                                                    value.getJSONObject(
-                                                                        "value"
-                                                                    )
-                                                                        .getJSONObject(
-                                                                            "Element_002"
-                                                                        )
-                                                                        .getString(
-                                                                            "tier"
-                                                                        )
-                                                                )
-                                                            }"
-                                                        )
-                                                    } else {
-                                                        Text(
-                                                            "${
-                                                                parse(
-                                                                    value.getJSONObject(
-                                                                        "value"
-                                                                    )
-                                                                        .getJSONObject(
-                                                                            "Element_002"
-                                                                        )
-                                                                        .getString(
-                                                                            "desc"
-                                                                        )
-                                                                )
-                                                            }"
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                            "CommonSkillTitle" -> item {
-                                                Column() {
-                                                    AsyncImage(
-                                                        model = value.getJSONObject("value")
-                                                            .getJSONObject("slotData")
-                                                            .getString("iconPath"),
-                                                        contentDescription = "스킬 아이콘"
-                                                    )
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("name")
-                                                        )
-                                                    )
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("level")
-                                                        )
-                                                    )
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("leftText")
-                                                        )
-                                                    )
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("middleText")
-                                                        )
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if (skillslist.toList()[if (index == -1) 0 else index].tripods.isNullOrEmpty()) {
-                                        item { Text("적용된 트라이포드가 없습니다") }
-                                    } else {
-                                        if (skillslist.toList()[if (index == -1) 0 else index].tripods != null) {
-                                            items(skillslist.toList()[if (index == -1) 0 else index].tripods) {
-                                                AsyncImage(
-                                                    "${it.icon}",
-                                                    contentDescription = "스킬이미지"
-                                                )
-                                                Text("${it.name}")
-                                                Text("${it.level}")
-                                                Text("${parse(it.tooltip ?: "")}")
-                                            }
-                                        }
+                        Column(Modifier.clickable {
+                            Log.d("인덱", "${idx}")
+                            index = idx
+                        }) {
+                            AsyncImage("${it.icon}", contentDescription = "스킬 이미지")
+                            Text("${it.name}")
+                            Box(Modifier.height(5.dp))
+                            if (it.rune == null) {
+                                Box(
+                                    Modifier
+                                        .width(20.dp)
+                                        .height(40.dp)
+                                ) {
+                                }
+                            } else {
+                                Box(
+                                    Modifier
+                                        .width(40.dp)
+                                        .height(60.dp)
+                                ) {
+                                    Column(Modifier.fillMaxSize()) {
+                                        AsyncImage("${it.rune.icon}", contentDescription = "룬 이미지")
+                                        Text("${it.rune.name}")
                                     }
                                 }
                             }
                         }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun engravings(
-    engravingslist: SnapshotStateList<charterEngravings>,
-    scaffoldState: ScaffoldState,
-    lifecycleScope: LifecycleCoroutineScope
-) {
-    Column(
-        Modifier
-            .padding(16.dp)
-            .fillMaxSize()) {
-        var index by remember { mutableStateOf(-1) }
-        LazyColumn() {
-            items(engravingslist.toList()) {
-                if(it.Engravings.isNullOrEmpty()) {
-                } else {
-                    for(i in it.Engravings.indices) {
-                        Row(Modifier.clickable { index = i }) {
-                            AsyncImage("${it.Engravings[i].icon}", contentDescription = "아이콘")
-                            Text("${it.Engravings[i].name}")
-                        }
-                        Box(Modifier.height(5.dp))
                         if (index != -1) {
                             Dialog(
                                 onDismissRequest = {
@@ -931,11 +606,11 @@ fun engravings(
                                 ) {
                                     Box(Modifier.fillMaxSize()) {
                                         LazyColumn(Modifier.fillMaxSize()) {
-                                            val engravingsJson =
-                                                JSONObject(it.Engravings[if (index == -1) 0 else index].Tooltip)
-                                            for (i in 0 until engravingsJson.length()) {
+                                            val skillJson =
+                                                JSONObject(skillslist.toList()[if (index == -1) 0 else index]!!.tooltip)
+                                            for (i in 0 until skillJson.length()) {
                                                 val value =
-                                                    engravingsJson.getJSONObject("Element_%03d".format(i))
+                                                    skillJson.getJSONObject("Element_%03d".format(i))
                                                 when (value["type"]) {
                                                     "NameTagBox", "SingleTextBox", "MultiTextBox", "ShowMeTheMoney" -> item {
                                                         Text(
@@ -960,7 +635,227 @@ fun engravings(
                                                             }
                                                         }
                                                     }
-                                                    "EngraveSkillTitle" -> item {
+                                                    "TripodSkillCustom" -> item {
+                                                        Column() {
+                                                            if (!value.getJSONObject("value")
+                                                                    .getJSONObject("Element_000")
+                                                                    .getBoolean("lock")
+                                                            ) {
+                                                                AsyncImage(
+                                                                    model = value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject("Element_000")
+                                                                        .getJSONObject("slotData")
+                                                                        .getString("iconPath"),
+                                                                    contentDescription = "스킬 아이콘"
+                                                                )
+                                                                Text(
+                                                                    "${
+                                                                        parse(
+                                                                            value.getJSONObject(
+                                                                                "value"
+                                                                            )
+                                                                                .getJSONObject(
+                                                                                    "Element_000"
+                                                                                )
+                                                                                .getString(
+                                                                                    "desc"
+                                                                                )
+                                                                        )
+                                                                    } ${
+                                                                        parse(
+                                                                            value.getJSONObject(
+                                                                                "value"
+                                                                            )
+                                                                                .getJSONObject(
+                                                                                    "Element_000"
+                                                                                )
+                                                                                .getString(
+                                                                                    "name"
+                                                                                )
+                                                                        )
+                                                                    }"
+                                                                )
+                                                                Text(
+                                                                    "${
+                                                                        parse(
+                                                                            value.getJSONObject(
+                                                                                "value"
+                                                                            )
+                                                                                .getJSONObject(
+                                                                                    "Element_000"
+                                                                                )
+                                                                                .getString(
+                                                                                    "tier"
+                                                                                )
+                                                                        )
+                                                                    }"
+                                                                )
+                                                            } else {
+                                                                Text(
+                                                                    "${
+                                                                        parse(
+                                                                            value.getJSONObject(
+                                                                                "value"
+                                                                            )
+                                                                                .getJSONObject(
+                                                                                    "Element_000"
+                                                                                )
+                                                                                .getString(
+                                                                                    "desc"
+                                                                                )
+                                                                        )
+                                                                    }"
+                                                                )
+                                                            }
+                                                            if (!value.getJSONObject("value")
+                                                                    .getJSONObject("Element_001")
+                                                                    .getBoolean("lock")
+                                                            ) {
+                                                                AsyncImage(
+                                                                    model = value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject("Element_001")
+                                                                        .getJSONObject("slotData")
+                                                                        .getString("iconPath"),
+                                                                    contentDescription = "스킬 아이콘"
+                                                                )
+                                                                Text(
+                                                                    "${
+                                                                        parse(
+                                                                            value.getJSONObject(
+                                                                                "value"
+                                                                            )
+                                                                                .getJSONObject(
+                                                                                    "Element_001"
+                                                                                )
+                                                                                .getString(
+                                                                                    "desc"
+                                                                                )
+                                                                        )
+                                                                    } ${
+                                                                        parse(
+                                                                            value.getJSONObject(
+                                                                                "value"
+                                                                            )
+                                                                                .getJSONObject(
+                                                                                    "Element_001"
+                                                                                )
+                                                                                .getString(
+                                                                                    "name"
+                                                                                )
+                                                                        )
+                                                                    }"
+                                                                )
+                                                                Text(
+                                                                    "${
+                                                                        parse(
+                                                                            value.getJSONObject(
+                                                                                "value"
+                                                                            )
+                                                                                .getJSONObject(
+                                                                                    "Element_001"
+                                                                                )
+                                                                                .getString(
+                                                                                    "tier"
+                                                                                )
+                                                                        )
+                                                                    }"
+                                                                )
+                                                            } else {
+                                                                Text(
+                                                                    "${
+                                                                        parse(
+                                                                            value.getJSONObject(
+                                                                                "value"
+                                                                            )
+                                                                                .getJSONObject(
+                                                                                    "Element_001"
+                                                                                )
+                                                                                .getString(
+                                                                                    "desc"
+                                                                                )
+                                                                        )
+                                                                    }"
+                                                                )
+                                                            }
+                                                            if (!value.getJSONObject("value")
+                                                                    .getJSONObject("Element_002")
+                                                                    .getBoolean("lock")
+                                                            ) {
+                                                                AsyncImage(
+                                                                    model = value.getJSONObject(
+                                                                        "value"
+                                                                    )
+                                                                        .getJSONObject("Element_002")
+                                                                        .getJSONObject("slotData")
+                                                                        .getString("iconPath"),
+                                                                    contentDescription = "스킬 아이콘"
+                                                                )
+                                                                Text(
+                                                                    "${
+                                                                        parse(
+                                                                            value.getJSONObject(
+                                                                                "value"
+                                                                            )
+                                                                                .getJSONObject(
+                                                                                    "Element_002"
+                                                                                )
+                                                                                .getString(
+                                                                                    "desc"
+                                                                                )
+                                                                        )
+                                                                    } ${
+                                                                        parse(
+                                                                            value.getJSONObject(
+                                                                                "value"
+                                                                            )
+                                                                                .getJSONObject(
+                                                                                    "Element_002"
+                                                                                )
+                                                                                .getString(
+                                                                                    "name"
+                                                                                )
+                                                                        )
+                                                                    }"
+                                                                )
+                                                                Text(
+                                                                    "${
+                                                                        parse(
+                                                                            value.getJSONObject(
+                                                                                "value"
+                                                                            )
+                                                                                .getJSONObject(
+                                                                                    "Element_002"
+                                                                                )
+                                                                                .getString(
+                                                                                    "tier"
+                                                                                )
+                                                                        )
+                                                                    }"
+                                                                )
+                                                            } else {
+                                                                Text(
+                                                                    "${
+                                                                        parse(
+                                                                            value.getJSONObject(
+                                                                                "value"
+                                                                            )
+                                                                                .getJSONObject(
+                                                                                    "Element_002"
+                                                                                )
+                                                                                .getString(
+                                                                                    "desc"
+                                                                                )
+                                                                        )
+                                                                    }"
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                    "CommonSkillTitle" -> item {
                                                         Column() {
                                                             AsyncImage(
                                                                 model = value.getJSONObject("value")
@@ -971,29 +866,165 @@ fun engravings(
                                                             Text(
                                                                 text = parse(
                                                                     value.getJSONObject("value")
-                                                                        .getString("forceMiddleText")
+                                                                        .getString("name")
                                                                 )
                                                             )
-                                                            Row() {
-                                                                Text(
-                                                                    text = parse(
-                                                                        value.getJSONObject("value")
-                                                                            .getString("leftText")
-                                                                    )
-                                                                )
-                                                                Text(
-                                                                    text = parse(
-                                                                        value.getJSONObject("value")
-                                                                            .getString("name")
-                                                                    )
-                                                                )
-                                                            }
                                                             Text(
                                                                 text = parse(
                                                                     value.getJSONObject("value")
-                                                                        .getString("rightText")
+                                                                        .getString("level")
                                                                 )
                                                             )
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("leftText")
+                                                                )
+                                                            )
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("middleText")
+                                                                )
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            if (skillslist.toList()[if (index == -1) 0 else index]!!.tripods.isNullOrEmpty()) {
+                                                item { Text("적용된 트라이포드가 없습니다") }
+                                            } else {
+                                                if (skillslist.toList()[if (index == -1) 0 else index]!!.tripods != null) {
+                                                    items(skillslist.toList()[if (index == -1) 0 else index]!!.tripods) {
+                                                        AsyncImage(
+                                                            "${it.icon}",
+                                                            contentDescription = "스킬이미지"
+                                                        )
+                                                        Text("${it.name}")
+                                                        Text("${it.level}")
+                                                        Text("${parse(it.tooltip ?: "")}")
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun engravings(
+    engravingslist: SnapshotStateList<charterEngravings?>,
+    scaffoldState: ScaffoldState,
+    lifecycleScope: LifecycleCoroutineScope
+) {
+    if(engravingslist.isNullOrEmpty()) {
+        Text("착용중인 스킬이없습니다")
+    } else {
+        Column(
+            Modifier
+                .padding(16.dp)
+                .fillMaxSize()) {
+            var index by remember { mutableStateOf(-1) }
+            LazyColumn() {
+                items(engravingslist.toList()) {
+                    if (it == null) {
+                        Text("적용된 스킬이없습니다.")
+                    } else {
+                        if(it.Engravings.isNullOrEmpty()) {
+                        } else {
+                            for(i in it.Engravings.indices) {
+                                Row(Modifier.clickable { index = i }) {
+                                    AsyncImage("${it.Engravings[i].icon}", contentDescription = "아이콘")
+                                    Text("${it.Engravings[i].name}")
+                                }
+                                Box(Modifier.height(5.dp))
+                                if (index != -1) {
+                                    Dialog(
+                                        onDismissRequest = {
+                                            index = -1
+                                        }
+                                    ) {
+                                        Surface(
+                                            modifier = Modifier
+                                                .width(250.dp)
+                                                .padding(10.dp),
+                                            color = Color.White
+                                        ) {
+                                            Box(Modifier.fillMaxSize()) {
+                                                LazyColumn(Modifier.fillMaxSize()) {
+                                                    val engravingsJson =
+                                                        JSONObject(it.Engravings[if (index == -1) 0 else index].Tooltip)
+                                                    for (i in 0 until engravingsJson.length()) {
+                                                        val value =
+                                                            engravingsJson.getJSONObject("Element_%03d".format(i))
+                                                        when (value["type"]) {
+                                                            "NameTagBox", "SingleTextBox", "MultiTextBox", "ShowMeTheMoney" -> item {
+                                                                Text(
+                                                                    parse(value.getString("value"))
+                                                                )
+                                                            }
+                                                            "ItemPartBox" -> item {
+                                                                Column() {
+                                                                    Text(
+                                                                        text = parse(
+                                                                            value.getJSONObject("value")
+                                                                                .getString("Element_000")
+                                                                        )
+                                                                    )
+                                                                    Row() {
+                                                                        Text(
+                                                                            text = parse(
+                                                                                value.getJSONObject("value")
+                                                                                    .getString("Element_001")
+                                                                            )
+                                                                        )
+                                                                    }
+                                                                }
+                                                            }
+                                                            "EngraveSkillTitle" -> item {
+                                                                Column() {
+                                                                    AsyncImage(
+                                                                        model = value.getJSONObject("value")
+                                                                            .getJSONObject("slotData")
+                                                                            .getString("iconPath"),
+                                                                        contentDescription = "스킬 아이콘"
+                                                                    )
+                                                                    Text(
+                                                                        text = parse(
+                                                                            value.getJSONObject("value")
+                                                                                .getString("forceMiddleText")
+                                                                        )
+                                                                    )
+                                                                    Row() {
+                                                                        Text(
+                                                                            text = parse(
+                                                                                value.getJSONObject("value")
+                                                                                    .getString("leftText")
+                                                                            )
+                                                                        )
+                                                                        Text(
+                                                                            text = parse(
+                                                                                value.getJSONObject("value")
+                                                                                    .getString("name")
+                                                                            )
+                                                                        )
+                                                                    }
+                                                                    Text(
+                                                                        text = parse(
+                                                                            value.getJSONObject("value")
+                                                                                .getString("rightText")
+                                                                        )
+                                                                    )
+                                                                }
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -1005,19 +1036,23 @@ fun engravings(
                         }
                     }
                 }
-            }
-            items(engravingslist.toList()) {
-                if(it.Effects.isNullOrEmpty()) {
-                } else {
-                    for(i in it.Effects.indices) {
-                        Row(Modifier.clickable {
-                            lifecycleScope.launch {
-                                scaffoldState.snackbarHostState.showSnackbar("${it.Effects[i].description}")
+                items(engravingslist.toList()) {
+                    if (it == null) {
+                        Text("적용된 스킬이없습니다.")
+                    } else {
+                        if(it.Effects.isNullOrEmpty()) {
+                        } else {
+                            for(i in it.Effects.indices) {
+                                Row(Modifier.clickable {
+                                    lifecycleScope.launch {
+                                        scaffoldState.snackbarHostState.showSnackbar("${it.Effects[i].description}")
+                                    }
+                                }) {
+                                    Text("${it.Effects[i].name}")
+                                }
+                                Box(Modifier.height(5.dp))
                             }
-                        }) {
-                            Text("${it.Effects[i].name}")
                         }
-                        Box(Modifier.height(5.dp))
                     }
                 }
             }
@@ -1025,7 +1060,7 @@ fun engravings(
     }
 }
 @Composable
-fun gems(gemslist: SnapshotStateList<charterGems>) {
+fun gems(gemslist: SnapshotStateList<charterGems?>) {
     var index by remember { mutableStateOf(-1) }
     if(gemslist.isNullOrEmpty()) {
         Box(Modifier.fillMaxSize()) {
@@ -1044,364 +1079,368 @@ fun gems(gemslist: SnapshotStateList<charterGems>) {
                     Modifier
                         .fillMaxSize()
                         .padding(top = 15.dp, start = 5.dp, end = 5.dp)) {
-                    itemsIndexed(gemslist[i].Gems) { idx, it1 ->
-                        Box(
-                            Modifier
-                                .size(60.dp)
-                                .clickable {
-                                    Log.d("인덱스", "${idx}")
-                                    index = idx
-                                }) {
-                            Column() {
-                                AsyncImage(
-                                    "${it1?.icon}",
-                                    contentDescription = "보석 아이콘",
-                                    modifier = Modifier.size(40.dp)
-                                )
-                                Text("${parse(it1?.name?: "")}", fontSize = 8.sp)
-                            }
-                            if (index != -1) {
-                                Dialog(
-                                    onDismissRequest = {
-                                        index = -1
-                                    }
-                                ) {
-                                    Surface(
-                                        modifier = Modifier
-                                            .width(250.dp)
-                                            .height(700.dp)
-                                            .padding(10.dp),
-                                        color = Color.White
+                    if(gemslist[i] == null) {
+                        item { Text("장착된 젬이 없습니다.")}
+                    } else {
+                        itemsIndexed(gemslist[i]!!.Gems) { idx, it1 ->
+                            Box(
+                                Modifier
+                                    .size(60.dp)
+                                    .clickable {
+                                        Log.d("인덱스", "${idx}")
+                                        index = idx
+                                    }) {
+                                Column() {
+                                    AsyncImage(
+                                        "${it1?.icon}",
+                                        contentDescription = "보석 아이콘",
+                                        modifier = Modifier.size(40.dp)
+                                    )
+                                    Text("${parse(it1?.name?: "")}", fontSize = 8.sp)
+                                }
+                                if (index != -1) {
+                                    Dialog(
+                                        onDismissRequest = {
+                                            index = -1
+                                        }
                                     ) {
-                                        Box(Modifier.fillMaxSize()) {
-                                            LazyColumn(Modifier.fillMaxSize()) {
-                                                val js = JSONObject(tootipParse(gemslist[0].Gems[if(index == -1) 0 else index]?.tooltip?: ""))
-                                                val EffectJs = JSONObject(tootipParse(gemslist[0].Effects[if (index == -1) 0 else index]?.tooltip?: ""))
-                                                for (i in 0 until js.length()) {
-                                                    val value = js.getJSONObject("Element_%03d".format(i))
-                                                    when (value["type"]) {
-                                                        "NameTagBox", "SingleTextBox", "MultiTextBox" -> item {
-                                                            Text(
-                                                                parse(value.getString("value"))
-                                                            )
-                                                        }
-                                                        "ItemPartBox" -> item {
-                                                            Column() {
+                                        Surface(
+                                            modifier = Modifier
+                                                .width(250.dp)
+                                                .height(700.dp)
+                                                .padding(10.dp),
+                                            color = Color.White
+                                        ) {
+                                            Box(Modifier.fillMaxSize()) {
+                                                LazyColumn(Modifier.fillMaxSize()) {
+                                                    val js = JSONObject(tootipParse(gemslist[0]!!.Gems[if(index == -1) 0 else index]?.tooltip?: ""))
+                                                    val EffectJs = JSONObject(tootipParse(gemslist[0]!!.Effects[if (index == -1) 0 else index]?.tooltip?: ""))
+                                                    for (i in 0 until js.length()) {
+                                                        val value = js.getJSONObject("Element_%03d".format(i))
+                                                        when (value["type"]) {
+                                                            "NameTagBox", "SingleTextBox", "MultiTextBox" -> item {
                                                                 Text(
-                                                                    text = parse(
-                                                                        value.getJSONObject("value")
-                                                                            .getString("Element_000")
-                                                                    )
+                                                                    parse(value.getString("value"))
                                                                 )
-                                                                Row() {
+                                                            }
+                                                            "ItemPartBox" -> item {
+                                                                Column() {
                                                                     Text(
                                                                         text = parse(
                                                                             value.getJSONObject("value")
-                                                                                .getString("Element_001")
+                                                                                .getString("Element_000")
+                                                                        )
+                                                                    )
+                                                                    Row() {
+                                                                        Text(
+                                                                            text = parse(
+                                                                                value.getJSONObject("value")
+                                                                                    .getString("Element_001")
+                                                                            )
+                                                                        )
+                                                                    }
+                                                                }
+                                                            }
+                                                            "ItemTitle" -> item {
+                                                                Column() {
+                                                                    AsyncImage(
+                                                                        model = value.getJSONObject("value")
+                                                                            .getJSONObject("slotData")
+                                                                            .getString("iconPath"),
+                                                                        contentDescription = "장비 아이콘"
+                                                                    )
+                                                                    Text(
+                                                                        text = parse(
+                                                                            value.getJSONObject("value")
+                                                                                .getString("leftStr0")
+                                                                        )
+                                                                    )
+                                                                    Text(
+                                                                        text = parse(
+                                                                            value.getJSONObject("value")
+                                                                                .getString("leftStr2")
                                                                         )
                                                                     )
                                                                 }
                                                             }
                                                         }
-                                                        "ItemTitle" -> item {
-                                                            Column() {
-                                                                AsyncImage(
-                                                                    model = value.getJSONObject("value")
-                                                                        .getJSONObject("slotData")
-                                                                        .getString("iconPath"),
-                                                                    contentDescription = "장비 아이콘"
-                                                                )
-                                                                Text(
-                                                                    text = parse(
-                                                                        value.getJSONObject("value")
-                                                                            .getString("leftStr0")
-                                                                    )
-                                                                )
-                                                                Text(
-                                                                    text = parse(
-                                                                        value.getJSONObject("value")
-                                                                            .getString("leftStr2")
-                                                                    )
-                                                                )
-                                                            }
-                                                        }
                                                     }
-                                                }
-                                                items(gemslist[i].Effects) {
-                                                    if(gemslist[0].Gems[if(index == -1) 0 else index]?.slot == it?.gemSlot) {
-                                                        Log.d("로그로그1", "${it1?.slot}  ${it?.gemSlot}")
-                                                        for (i in 0 until EffectJs.length()) {
-                                                            val value = EffectJs.getJSONObject("Element_%03d".format(i))
-                                                            when (value["type"]) {
-                                                                "NameTagBox", "SingleTextBox", "MultiTextBox" ->
-                                                                    Text(
-                                                                        parse(value.getString("value"))
-                                                                    )
-                                                                "ItemPartBox" ->
-                                                                    Column() {
+                                                    items(gemslist[i]!!.Effects) {
+                                                        if(gemslist[0]!!.Gems[if(index == -1) 0 else index]?.slot == it?.gemSlot) {
+                                                            Log.d("로그로그1", "${it1?.slot}  ${it?.gemSlot}")
+                                                            for (i in 0 until EffectJs.length()) {
+                                                                val value = EffectJs.getJSONObject("Element_%03d".format(i))
+                                                                when (value["type"]) {
+                                                                    "NameTagBox", "SingleTextBox", "MultiTextBox" ->
                                                                         Text(
-                                                                            text = parse(
-                                                                                value.getJSONObject("value")
-                                                                                    .getString("Element_000")
-                                                                            )
+                                                                            parse(value.getString("value"))
                                                                         )
-                                                                        Row() {
+                                                                    "ItemPartBox" ->
+                                                                        Column() {
                                                                             Text(
                                                                                 text = parse(
                                                                                     value.getJSONObject("value")
-                                                                                        .getString("Element_001")
+                                                                                        .getString("Element_000")
+                                                                                )
+                                                                            )
+                                                                            Row() {
+                                                                                Text(
+                                                                                    text = parse(
+                                                                                        value.getJSONObject("value")
+                                                                                            .getString("Element_001")
+                                                                                    )
+                                                                                )
+                                                                            }
+                                                                        }
+                                                                    "CommonSkillTitle" ->
+                                                                        Column() {
+                                                                            AsyncImage(
+                                                                                model = value.getJSONObject("value")
+                                                                                    .getJSONObject("slotData")
+                                                                                    .getString("iconPath"),
+                                                                                contentDescription = "스킬 아이콘"
+                                                                            )
+                                                                            Text(
+                                                                                "${parse(
+                                                                                    value.getJSONObject("value")
+                                                                                        .getString("leftText"))}"
+                                                                            )
+                                                                            Text(
+                                                                                text = parse(
+                                                                                    value.getJSONObject("value")
+                                                                                        .getString("level")
+                                                                                )
+                                                                            )
+                                                                            Text(
+                                                                                text = parse(
+                                                                                    value.getJSONObject("value")
+                                                                                        .getString("middleText")
+                                                                                )
+                                                                            )
+                                                                            Text(
+                                                                                text = parse(
+                                                                                    value.getJSONObject("value")
+                                                                                        .getString("name")
                                                                                 )
                                                                             )
                                                                         }
-                                                                    }
-                                                                "CommonSkillTitle" ->
-                                                                    Column() {
-                                                                        AsyncImage(
-                                                                            model = value.getJSONObject("value")
-                                                                                .getJSONObject("slotData")
-                                                                                .getString("iconPath"),
-                                                                            contentDescription = "스킬 아이콘"
-                                                                        )
-                                                                        Text(
-                                                                            "${parse(
-                                                                                value.getJSONObject("value")
-                                                                                    .getString("leftText"))}"
-                                                                        )
-                                                                        Text(
-                                                                            text = parse(
-                                                                                value.getJSONObject("value")
-                                                                                    .getString("level")
-                                                                            )
-                                                                        )
-                                                                        Text(
-                                                                            text = parse(
-                                                                                value.getJSONObject("value")
-                                                                                    .getString("middleText")
-                                                                            )
-                                                                        )
-                                                                        Text(
-                                                                            text = parse(
-                                                                                value.getJSONObject("value")
-                                                                                    .getString("name")
-                                                                            )
-                                                                        )
-                                                                    }
-                                                                "TripodSkillCustom" ->
-                                                                    Column() {
-                                                                        if (!value.getJSONObject("value")
-                                                                                .getJSONObject("Element_000")
-                                                                                .getBoolean("lock")
-                                                                        ) {
-                                                                            AsyncImage(
-                                                                                model = value.getJSONObject(
-                                                                                    "value"
-                                                                                )
+                                                                    "TripodSkillCustom" ->
+                                                                        Column() {
+                                                                            if (!value.getJSONObject("value")
                                                                                     .getJSONObject("Element_000")
-                                                                                    .getJSONObject("slotData")
-                                                                                    .getString("iconPath"),
-                                                                                contentDescription = "스킬 아이콘"
-                                                                            )
-                                                                            Text(
-                                                                                "${
-                                                                                    parse(
-                                                                                        value.getJSONObject(
-                                                                                            "value"
-                                                                                        )
-                                                                                            .getJSONObject(
-                                                                                                "Element_000"
-                                                                                            )
-                                                                                            .getString(
-                                                                                                "desc"
-                                                                                            )
+                                                                                    .getBoolean("lock")
+                                                                            ) {
+                                                                                AsyncImage(
+                                                                                    model = value.getJSONObject(
+                                                                                        "value"
                                                                                     )
-                                                                                } ${
-                                                                                    parse(
-                                                                                        value.getJSONObject(
-                                                                                            "value"
-                                                                                        )
-                                                                                            .getJSONObject(
-                                                                                                "Element_000"
-                                                                                            )
-                                                                                            .getString(
-                                                                                                "name"
-                                                                                            )
-                                                                                    )
-                                                                                }"
-                                                                            )
-                                                                            Text(
-                                                                                "${
-                                                                                    parse(
-                                                                                        value.getJSONObject(
-                                                                                            "value"
-                                                                                        )
-                                                                                            .getJSONObject(
-                                                                                                "Element_000"
-                                                                                            )
-                                                                                            .getString(
-                                                                                                "tier"
-                                                                                            )
-                                                                                    )
-                                                                                }"
-                                                                            )
-                                                                        } else {
-                                                                            Text(
-                                                                                "${
-                                                                                    parse(
-                                                                                        value.getJSONObject(
-                                                                                            "value"
-                                                                                        )
-                                                                                            .getJSONObject(
-                                                                                                "Element_000"
-                                                                                            )
-                                                                                            .getString(
-                                                                                                "desc"
-                                                                                            )
-                                                                                    )
-                                                                                }")
-                                                                        }
-                                                                        if (!value.getJSONObject("value")
-                                                                                .getJSONObject("Element_001")
-                                                                                .getBoolean("lock")
-                                                                        ) {
-                                                                            AsyncImage(
-                                                                                model = value.getJSONObject(
-                                                                                    "value"
+                                                                                        .getJSONObject("Element_000")
+                                                                                        .getJSONObject("slotData")
+                                                                                        .getString("iconPath"),
+                                                                                    contentDescription = "스킬 아이콘"
                                                                                 )
+                                                                                Text(
+                                                                                    "${
+                                                                                        parse(
+                                                                                            value.getJSONObject(
+                                                                                                "value"
+                                                                                            )
+                                                                                                .getJSONObject(
+                                                                                                    "Element_000"
+                                                                                                )
+                                                                                                .getString(
+                                                                                                    "desc"
+                                                                                                )
+                                                                                        )
+                                                                                    } ${
+                                                                                        parse(
+                                                                                            value.getJSONObject(
+                                                                                                "value"
+                                                                                            )
+                                                                                                .getJSONObject(
+                                                                                                    "Element_000"
+                                                                                                )
+                                                                                                .getString(
+                                                                                                    "name"
+                                                                                                )
+                                                                                        )
+                                                                                    }"
+                                                                                )
+                                                                                Text(
+                                                                                    "${
+                                                                                        parse(
+                                                                                            value.getJSONObject(
+                                                                                                "value"
+                                                                                            )
+                                                                                                .getJSONObject(
+                                                                                                    "Element_000"
+                                                                                                )
+                                                                                                .getString(
+                                                                                                    "tier"
+                                                                                                )
+                                                                                        )
+                                                                                    }"
+                                                                                )
+                                                                            } else {
+                                                                                Text(
+                                                                                    "${
+                                                                                        parse(
+                                                                                            value.getJSONObject(
+                                                                                                "value"
+                                                                                            )
+                                                                                                .getJSONObject(
+                                                                                                    "Element_000"
+                                                                                                )
+                                                                                                .getString(
+                                                                                                    "desc"
+                                                                                                )
+                                                                                        )
+                                                                                    }")
+                                                                            }
+                                                                            if (!value.getJSONObject("value")
                                                                                     .getJSONObject("Element_001")
-                                                                                    .getJSONObject("slotData")
-                                                                                    .getString("iconPath"),
-                                                                                contentDescription = "스킬 아이콘"
-                                                                            )
-                                                                            Text(
-                                                                                "${
-                                                                                    parse(
-                                                                                        value.getJSONObject(
-                                                                                            "value"
-                                                                                        )
-                                                                                            .getJSONObject(
-                                                                                                "Element_001"
-                                                                                            )
-                                                                                            .getString(
-                                                                                                "desc"
-                                                                                            )
+                                                                                    .getBoolean("lock")
+                                                                            ) {
+                                                                                AsyncImage(
+                                                                                    model = value.getJSONObject(
+                                                                                        "value"
                                                                                     )
-                                                                                } ${
-                                                                                    parse(
-                                                                                        value.getJSONObject(
-                                                                                            "value"
-                                                                                        )
-                                                                                            .getJSONObject(
-                                                                                                "Element_001"
-                                                                                            )
-                                                                                            .getString(
-                                                                                                "name"
-                                                                                            )
-                                                                                    )
-                                                                                }"
-                                                                            )
-                                                                            Text(
-                                                                                "${
-                                                                                    parse(
-                                                                                        value.getJSONObject(
-                                                                                            "value"
-                                                                                        )
-                                                                                            .getJSONObject(
-                                                                                                "Element_001"
-                                                                                            )
-                                                                                            .getString(
-                                                                                                "tier"
-                                                                                            )
-                                                                                    )
-                                                                                }"
-                                                                            )
-                                                                        } else {
-                                                                            Text(
-                                                                                "${
-                                                                                    parse(
-                                                                                        value.getJSONObject(
-                                                                                            "value"
-                                                                                        )
-                                                                                            .getJSONObject(
-                                                                                                "Element_001"
-                                                                                            )
-                                                                                            .getString(
-                                                                                                "desc"
-                                                                                            )
-                                                                                    )
-                                                                                }")
-                                                                        }
-                                                                        if (!value.getJSONObject("value")
-                                                                                .getJSONObject("Element_002")
-                                                                                .getBoolean("lock")
-                                                                        ) {
-                                                                            AsyncImage(
-                                                                                model = value.getJSONObject(
-                                                                                    "value"
+                                                                                        .getJSONObject("Element_001")
+                                                                                        .getJSONObject("slotData")
+                                                                                        .getString("iconPath"),
+                                                                                    contentDescription = "스킬 아이콘"
                                                                                 )
+                                                                                Text(
+                                                                                    "${
+                                                                                        parse(
+                                                                                            value.getJSONObject(
+                                                                                                "value"
+                                                                                            )
+                                                                                                .getJSONObject(
+                                                                                                    "Element_001"
+                                                                                                )
+                                                                                                .getString(
+                                                                                                    "desc"
+                                                                                                )
+                                                                                        )
+                                                                                    } ${
+                                                                                        parse(
+                                                                                            value.getJSONObject(
+                                                                                                "value"
+                                                                                            )
+                                                                                                .getJSONObject(
+                                                                                                    "Element_001"
+                                                                                                )
+                                                                                                .getString(
+                                                                                                    "name"
+                                                                                                )
+                                                                                        )
+                                                                                    }"
+                                                                                )
+                                                                                Text(
+                                                                                    "${
+                                                                                        parse(
+                                                                                            value.getJSONObject(
+                                                                                                "value"
+                                                                                            )
+                                                                                                .getJSONObject(
+                                                                                                    "Element_001"
+                                                                                                )
+                                                                                                .getString(
+                                                                                                    "tier"
+                                                                                                )
+                                                                                        )
+                                                                                    }"
+                                                                                )
+                                                                            } else {
+                                                                                Text(
+                                                                                    "${
+                                                                                        parse(
+                                                                                            value.getJSONObject(
+                                                                                                "value"
+                                                                                            )
+                                                                                                .getJSONObject(
+                                                                                                    "Element_001"
+                                                                                                )
+                                                                                                .getString(
+                                                                                                    "desc"
+                                                                                                )
+                                                                                        )
+                                                                                    }")
+                                                                            }
+                                                                            if (!value.getJSONObject("value")
                                                                                     .getJSONObject("Element_002")
-                                                                                    .getJSONObject("slotData")
-                                                                                    .getString("iconPath"),
-                                                                                contentDescription = "스킬 아이콘"
-                                                                            )
-                                                                            Text(
-                                                                                "${
-                                                                                    parse(
-                                                                                        value.getJSONObject(
-                                                                                            "value"
-                                                                                        )
-                                                                                            .getJSONObject(
-                                                                                                "Element_002"
-                                                                                            )
-                                                                                            .getString(
-                                                                                                "desc"
-                                                                                            )
+                                                                                    .getBoolean("lock")
+                                                                            ) {
+                                                                                AsyncImage(
+                                                                                    model = value.getJSONObject(
+                                                                                        "value"
                                                                                     )
-                                                                                } ${
-                                                                                    parse(
-                                                                                        value.getJSONObject(
-                                                                                            "value"
+                                                                                        .getJSONObject("Element_002")
+                                                                                        .getJSONObject("slotData")
+                                                                                        .getString("iconPath"),
+                                                                                    contentDescription = "스킬 아이콘"
+                                                                                )
+                                                                                Text(
+                                                                                    "${
+                                                                                        parse(
+                                                                                            value.getJSONObject(
+                                                                                                "value"
+                                                                                            )
+                                                                                                .getJSONObject(
+                                                                                                    "Element_002"
+                                                                                                )
+                                                                                                .getString(
+                                                                                                    "desc"
+                                                                                                )
                                                                                         )
-                                                                                            .getJSONObject(
-                                                                                                "Element_002"
+                                                                                    } ${
+                                                                                        parse(
+                                                                                            value.getJSONObject(
+                                                                                                "value"
                                                                                             )
-                                                                                            .getString(
-                                                                                                "name"
-                                                                                            )
-                                                                                    )
-                                                                                }"
-                                                                            )
-                                                                            Text(
-                                                                                "${
-                                                                                    parse(
-                                                                                        value.getJSONObject(
-                                                                                            "value"
+                                                                                                .getJSONObject(
+                                                                                                    "Element_002"
+                                                                                                )
+                                                                                                .getString(
+                                                                                                    "name"
+                                                                                                )
                                                                                         )
-                                                                                            .getJSONObject(
-                                                                                                "Element_002"
+                                                                                    }"
+                                                                                )
+                                                                                Text(
+                                                                                    "${
+                                                                                        parse(
+                                                                                            value.getJSONObject(
+                                                                                                "value"
                                                                                             )
-                                                                                            .getString(
-                                                                                                "tier"
-                                                                                            )
-                                                                                    )
-                                                                                }"
-                                                                            )
-                                                                        } else {
-                                                                            Text(
-                                                                                "${
-                                                                                    parse(
-                                                                                        value.getJSONObject(
-                                                                                            "value"
+                                                                                                .getJSONObject(
+                                                                                                    "Element_002"
+                                                                                                )
+                                                                                                .getString(
+                                                                                                    "tier"
+                                                                                                )
                                                                                         )
-                                                                                            .getJSONObject(
-                                                                                                "Element_002"
+                                                                                    }"
+                                                                                )
+                                                                            } else {
+                                                                                Text(
+                                                                                    "${
+                                                                                        parse(
+                                                                                            value.getJSONObject(
+                                                                                                "value"
                                                                                             )
-                                                                                            .getString(
-                                                                                                "desc"
-                                                                                            )
-                                                                                    )
-                                                                                }")
+                                                                                                .getJSONObject(
+                                                                                                    "Element_002"
+                                                                                                )
+                                                                                                .getString(
+                                                                                                    "desc"
+                                                                                                )
+                                                                                        )
+                                                                                    }")
+                                                                            }
                                                                         }
-                                                                    }
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -1419,160 +1458,167 @@ fun gems(gemslist: SnapshotStateList<charterGems>) {
     }
 }
 @Composable
-fun avatar(avatarslist: SnapshotStateList<charterAvatars>, charterProfile: charterProfile) {
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()) {
-        var index by remember { mutableStateOf(-1) }
-        AsyncImage(model = "${charterProfile.CharacterImage}", contentDescription = "캐릭터 이미지", modifier = Modifier.fillMaxSize())
-        LazyVerticalGrid(columns = GridCells.Fixed(2),
+fun avatar(avatarslist: SnapshotStateList<charterAvatars?>, charterProfile: charterProfile) {
+    if(avatarslist.isNullOrEmpty()) {
+        Text("착용중인 스킬이없습니다")
+    } else {
+        Column(
             Modifier
-                .fillMaxSize()
-                .padding(top = 40.dp)
-                .align(Alignment.BottomCenter)
-            ,horizontalArrangement = Arrangement.Center,verticalArrangement = Arrangement.spacedBy(16.dp),) {
-            itemsIndexed(avatarslist.toList()) { idx, it ->
-                val json = JSONObject(it.Tooltip?.let { it1 -> tootipParse(it1) })
-                for (i in 0 until json.length() - 1) {
-                    val value = json.getJSONObject("Element_%03d".format(i))
-                    if(value["type"] == "ItemTitle") {
-                        Log.d("value123","${value}")
-                        Box(
-                            Modifier
-                                .size(40.dp)
-                                .clickable {
-                                    index = idx
+                .fillMaxWidth()
+                .fillMaxHeight()) {
+            var index by remember { mutableStateOf(-1) }
+            AsyncImage(model = "${charterProfile.CharacterImage}", contentDescription = "캐릭터 이미지", modifier = Modifier.fillMaxSize())
+            LazyVerticalGrid(columns = GridCells.Fixed(2),
+                Modifier
+                    .fillMaxSize()
+                    .padding(top = 40.dp)
+                ,horizontalArrangement = Arrangement.Center,verticalArrangement = Arrangement.spacedBy(16.dp),) {
+                itemsIndexed(avatarslist.toList()) { idx, it ->
+                    if(it == null) {
+                        Text("아바타 없음")
+                    } else {
+                        val json = JSONObject(it.Tooltip?.let { it1 -> tootipParse(it1) })
+                        for (i in 0 until json.length() - 1) {
+                            val value = json.getJSONObject("Element_%03d".format(i))
+                            if(value["type"] == "ItemTitle") {
+                                Log.d("value123","${value}")
+                                Box(
+                                    Modifier
+                                        .size(40.dp)
+                                        .clickable {
+                                            index = idx
 
-                                }) {
-                            AsyncImage(model = value.getJSONObject("value").getJSONObject("slotData").getString("iconPath"), contentDescription = "장비 아이콘", modifier = Modifier.fillMaxSize())
+                                        }) {
+                                    AsyncImage(model = value.getJSONObject("value").getJSONObject("slotData").getString("iconPath"), contentDescription = "장비 아이콘", modifier = Modifier.fillMaxSize())
+                                }
+                            }
                         }
-                    }
-                }
-                if(index != -1) {
-                    Dialog(
-                        onDismissRequest = {
-                            index = -1
-                        }
-                    ) {
-                        Surface(
-                            modifier = Modifier
-                                .width(250.dp)
-                                .padding(10.dp),
-                            color = Color.White
-                        ) {
-                            Box(Modifier.fillMaxSize()) {
-                                LazyColumn(Modifier.fillMaxSize()) {
-                                    val js = JSONObject(avatarslist.toList()[if(index == -1) 0 else index].Tooltip?.let { it1 -> tootipParse(it1) })
-                                    for (i in 0 until js.length()-1) {
-                                        val value = js.getJSONObject("Element_%03d".format(i))
-                                        when (value["type"]) {
-                                            "NameTagBox", "SingleTextBox", "MultiTextBox", "ShowMeTheMoney" -> item {
-                                                Text(
-                                                    parse(value.getString("value"))
-                                                )
-                                            }
-                                            "ItemPartBox" -> item {
-                                                Column() {
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("Element_000")
-                                                        )
-                                                    )
-                                                    Row() {
+                        if(index != -1) {
+                            Dialog(
+                                onDismissRequest = {
+                                    index = -1
+                                }
+                            ) {
+                                Surface(
+                                    modifier = Modifier
+                                        .width(250.dp)
+                                        .padding(10.dp),
+                                    color = Color.White
+                                ) {
+                                    Box(Modifier.fillMaxSize()) {
+                                        LazyColumn(Modifier.fillMaxSize()) {
+                                            val js = JSONObject(avatarslist.toList()[if(index == -1) 0 else index]!!.Tooltip?.let { it1 -> tootipParse(it1) })
+                                            for (i in 0 until js.length()-1) {
+                                                val value = js.getJSONObject("Element_%03d".format(i))
+                                                when (value["type"]) {
+                                                    "NameTagBox", "SingleTextBox", "MultiTextBox", "ShowMeTheMoney" -> item {
                                                         Text(
-                                                            text = parse(
-                                                                value.getJSONObject("value")
-                                                                    .getString("Element_001")
-                                                            )
+                                                            parse(value.getString("value"))
                                                         )
                                                     }
-                                                }
-                                            }
-                                            "IndentStringGroup" -> item {
-                                                Column() {
-                                                    keyToList<JSONObject>(value.getJSONObject("value")).map { first ->
-                                                        keyToList<JSONObject>(first.getJSONObject("contentStr")).map { second ->
-                                                            when (second["bPoint"]) {
-                                                                true, 1 -> Text(
-                                                                    parse(
-                                                                        second.getString(
-                                                                            "contentStr"
-                                                                        )
-                                                                    ), color = Color.White
+                                                    "ItemPartBox" -> item {
+                                                        Column() {
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("Element_000")
                                                                 )
-                                                                false, 0 -> Text(
-                                                                    parse(
-                                                                        second.getString(
-                                                                            "contentStr"
-                                                                        )
-                                                                    ), color = Color.DarkGray
+                                                            )
+                                                            Row() {
+                                                                Text(
+                                                                    text = parse(
+                                                                        value.getJSONObject("value")
+                                                                            .getString("Element_001")
+                                                                    )
                                                                 )
-                                                                else -> null
                                                             }
                                                         }
-                                                        Text(parse(first.getString("topStr")))
                                                     }
-                                                }
-                                            }
-                                            "Progress" -> item {
-                                                Column() {
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("forceValue")
-                                                        )
-                                                    )
-                                                    Text(
-                                                        text = value.getJSONObject("value")
-                                                            .getInt("maximum").toString()
-                                                    )
-                                                    Text(
-                                                        text = value.getJSONObject("value")
-                                                            .getInt("minimum").toString()
-                                                    )
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("title")
-                                                        )
-                                                    )
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("value")
-                                                        )
-                                                    )
-                                                }
-                                            }
-                                            "ItemTitle" -> item {
-                                                Column() {
-                                                    AsyncImage(
-                                                        model = value.getJSONObject("value")
-                                                            .getJSONObject("slotData")
-                                                            .getString("iconPath"),
-                                                        contentDescription = "장비 아이콘"
-                                                    )
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("leftStr0")
-                                                        )
-                                                    )
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("leftStr2")
-                                                        )
-                                                    )
+                                                    "IndentStringGroup" -> item {
+                                                        Column() {
+                                                            keyToList<JSONObject>(value.getJSONObject("value")).map { first ->
+                                                                keyToList<JSONObject>(first.getJSONObject("contentStr")).map { second ->
+                                                                    when (second["bPoint"]) {
+                                                                        true, 1 -> Text(
+                                                                            parse(
+                                                                                second.getString(
+                                                                                    "contentStr"
+                                                                                )
+                                                                            ), color = Color.White
+                                                                        )
+                                                                        false, 0 -> Text(
+                                                                            parse(
+                                                                                second.getString(
+                                                                                    "contentStr"
+                                                                                )
+                                                                            ), color = Color.DarkGray
+                                                                        )
+                                                                        else -> null
+                                                                    }
+                                                                }
+                                                                Text(parse(first.getString("topStr")))
+                                                            }
+                                                        }
+                                                    }
+                                                    "Progress" -> item {
+                                                        Column() {
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("forceValue")
+                                                                )
+                                                            )
+                                                            Text(
+                                                                text = value.getJSONObject("value")
+                                                                    .getInt("maximum").toString()
+                                                            )
+                                                            Text(
+                                                                text = value.getJSONObject("value")
+                                                                    .getInt("minimum").toString()
+                                                            )
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("title")
+                                                                )
+                                                            )
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("value")
+                                                                )
+                                                            )
+                                                        }
+                                                    }
+                                                    "ItemTitle" -> item {
+                                                        Column() {
+                                                            AsyncImage(
+                                                                model = value.getJSONObject("value")
+                                                                    .getJSONObject("slotData")
+                                                                    .getString("iconPath"),
+                                                                contentDescription = "장비 아이콘"
+                                                            )
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("leftStr0")
+                                                                )
+                                                            )
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("leftStr2")
+                                                                )
+                                                            )
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
                             }
-                        }
+                        }   
                     }
                 }
             }
@@ -1580,216 +1626,223 @@ fun avatar(avatarslist: SnapshotStateList<charterAvatars>, charterProfile: chart
     }
 }
 @Composable
-fun equipment(equipmentlist: SnapshotStateList<charterEquipment>, charterProfile: charterProfile) {
-    // openDialog.value = !openDialog.value
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()) {
-        var index by remember { mutableStateOf(-1) }
-        AsyncImage(model = "${charterProfile.CharacterImage}", contentDescription = "캐릭터 이미지", modifier = Modifier.fillMaxSize())
-        LazyVerticalGrid(columns = GridCells.Fixed(2),
+fun equipment(equipmentlist: SnapshotStateList<charterEquipment?>, charterProfile: charterProfile) {
+    if(equipmentlist.isNullOrEmpty()) {
+        Text("착용중인 스킬이없습니다")
+    } else {
+        Box(
             Modifier
-                .fillMaxSize()
-                .padding(top = 40.dp)
-                .align(Alignment.BottomCenter)
-            ,horizontalArrangement = Arrangement.Center,verticalArrangement = Arrangement.spacedBy(16.dp),) {
-            itemsIndexed(equipmentlist.toList()) { idx, it ->
-                val json = JSONObject(it.Tooltip?.let { it1 -> tootipParse(it1) })
-                for (i in 0 until json.length()) {
-                    val value = json.getJSONObject("Element_%03d".format(i))
-                    if(value["type"] == "ItemTitle") {
-                        Log.d("value123","${value}")
-                        Box(
-                            Modifier
-                                .size(40.dp)
-                                .clickable {
-                                    index = idx
-                                    Log.d("애미야", "${index}")
-                                }) {
-                            AsyncImage(model = value.getJSONObject("value").getJSONObject("slotData").getString("iconPath"), contentDescription = "장비 아이콘", modifier = Modifier.fillMaxSize())
-                            when(value.getJSONObject("value").getInt("qualityValue") / 10) {
-                                0 -> Box(
+                .fillMaxWidth()
+                .fillMaxHeight()) {
+            var index by remember { mutableStateOf(-1) }
+            AsyncImage(model = "${charterProfile.CharacterImage}", contentDescription = "캐릭터 이미지", modifier = Modifier.fillMaxSize())
+            LazyVerticalGrid(columns = GridCells.Fixed(2),
+                Modifier
+                    .fillMaxSize()
+                    .padding(top = 40.dp)
+                    .align(Alignment.BottomCenter)
+                ,horizontalArrangement = Arrangement.Center,verticalArrangement = Arrangement.spacedBy(16.dp),) {
+                itemsIndexed(equipmentlist.toList()) { idx, it ->
+                    if(it == null) {
+                        Text("장비 없음")
+                    } else {
+                        val json = JSONObject(it.Tooltip?.let { it1 -> tootipParse(it1) })
+                        for (i in 0 until json.length()) {
+                            val value = json.getJSONObject("Element_%03d".format(i))
+                            if(value["type"] == "ItemTitle") {
+                                Log.d("value123","${value}")
+                                Box(
                                     Modifier
-                                        .width(40.dp)
-                                        .height(7.dp)
-                                        .background(Color.Red)
-                                        .align(Alignment.BottomCenter)) {}
-                                1,2 -> Box(
-                                    Modifier
-                                        .width(40.dp)
-                                        .height(7.dp)
-                                        .background(Color.Yellow)
-                                        .align(Alignment.BottomCenter)) {}
-                                3,4,5,6 -> Box(
-                                    Modifier
-                                        .width(40.dp)
-                                        .height(7.dp)
-                                        .background(Color.Green)
-                                        .align(Alignment.BottomCenter)) {}
-                                7,8 -> Box(
-                                    Modifier
-                                        .width(40.dp)
-                                        .height(7.dp)
-                                        .background(Color.Blue)
-                                        .align(Alignment.BottomCenter)) {}
-                                9,10 -> Box(
-                                    Modifier
-                                        .width(40.dp)
-                                        .height(7.dp)
-                                        .background(Color.Magenta)
-                                        .align(Alignment.BottomCenter)) {}
-                                else -> Box(
-                                    Modifier
-                                        .width(40.dp)
-                                        .height(7.dp)
-                                        .background(Color.Black)
-                                        .align(Alignment.BottomCenter)
-                                ) {}
+                                        .size(40.dp)
+                                        .clickable {
+                                            index = idx
+                                            Log.d("애미야", "${index}")
+                                        }) {
+                                    AsyncImage(model = value.getJSONObject("value").getJSONObject("slotData").getString("iconPath"), contentDescription = "장비 아이콘", modifier = Modifier.fillMaxSize())
+                                    when(value.getJSONObject("value").getInt("qualityValue") / 10) {
+                                        0 -> Box(
+                                            Modifier
+                                                .width(40.dp)
+                                                .height(7.dp)
+                                                .background(Color.Red)
+                                                .align(Alignment.BottomCenter)) {}
+                                        1,2 -> Box(
+                                            Modifier
+                                                .width(40.dp)
+                                                .height(7.dp)
+                                                .background(Color.Yellow)
+                                                .align(Alignment.BottomCenter)) {}
+                                        3,4,5,6 -> Box(
+                                            Modifier
+                                                .width(40.dp)
+                                                .height(7.dp)
+                                                .background(Color.Green)
+                                                .align(Alignment.BottomCenter)) {}
+                                        7,8 -> Box(
+                                            Modifier
+                                                .width(40.dp)
+                                                .height(7.dp)
+                                                .background(Color.Blue)
+                                                .align(Alignment.BottomCenter)) {}
+                                        9,10 -> Box(
+                                            Modifier
+                                                .width(40.dp)
+                                                .height(7.dp)
+                                                .background(Color.Magenta)
+                                                .align(Alignment.BottomCenter)) {}
+                                        else -> Box(
+                                            Modifier
+                                                .width(40.dp)
+                                                .height(7.dp)
+                                                .background(Color.Black)
+                                                .align(Alignment.BottomCenter)
+                                        ) {}
+                                    }
+                                }
                             }
                         }
-                    }
-                }
-                if(index != -1) {
-                    Dialog(
-                        onDismissRequest = {
-                            index = -1
-                        }
-                    ) {
-                        Surface(
-                            modifier = Modifier
-                                .width(250.dp)
-                                .padding(10.dp),
-                            color = Color.White
-                        ) {
-                            Box(Modifier.fillMaxSize()) {
-                                LazyColumn(Modifier.fillMaxSize()) {
-                                    val js = JSONObject(equipmentlist.toList()[if(index == -1) 0 else index].Tooltip?.let { it1 -> tootipParse(it1) })
-                                    for (i in 0 until js.length()) {
-                                        val value = js.getJSONObject("Element_%03d".format(i))
-                                        when (value["type"]) {
-                                            "NameTagBox", "SingleTextBox", "MultiTextBox", "ShowMeTheMoney" -> item {
-                                                Text(
-                                                    parse(value.getString("value"))
-                                                )
-                                            }
-                                            "ItemPartBox" -> item {
-                                                Column() {
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("Element_000")
-                                                        )
-                                                    )
-                                                    Row() {
+                        if(index != -1) {
+                            Dialog(
+                                onDismissRequest = {
+                                    index = -1
+                                }
+                            ) {
+                                Surface(
+                                    modifier = Modifier
+                                        .width(250.dp)
+                                        .padding(10.dp),
+                                    color = Color.White
+                                ) {
+                                    Box(Modifier.fillMaxSize()) {
+                                        LazyColumn(Modifier.fillMaxSize()) {
+                                            val js = JSONObject(equipmentlist.toList()[if(index == -1) 0 else index]!!.Tooltip?.let { it1 -> tootipParse(it1) })
+                                            for (i in 0 until js.length()) {
+                                                val value = js.getJSONObject("Element_%03d".format(i))
+                                                when (value["type"]) {
+                                                    "NameTagBox", "SingleTextBox", "MultiTextBox", "ShowMeTheMoney" -> item {
                                                         Text(
-                                                            text = parse(
-                                                                value.getJSONObject("value")
-                                                                    .getString("Element_001")
-                                                            )
+                                                            parse(value.getString("value"))
                                                         )
                                                     }
-                                                }
-                                            }
-                                            "IndentStringGroup" -> item {
-                                                Column() {
-                                                    keyToList<JSONObject>(value.getJSONObject("value")).map { first ->
-                                                        keyToList<JSONObject>(first.getJSONObject("contentStr")).map { second ->
-                                                            when (second["bPoint"]) {
-                                                                true, 1 -> Text(
-                                                                    parse(
-                                                                        second.getString(
-                                                                            "contentStr"
-                                                                        )
-                                                                    ), color = Color.White
+                                                    "ItemPartBox" -> item {
+                                                        Column() {
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("Element_000")
                                                                 )
-                                                                false, 0 -> Text(
-                                                                    parse(
-                                                                        second.getString(
-                                                                            "contentStr"
-                                                                        )
-                                                                    ), color = Color.DarkGray
+                                                            )
+                                                            Row() {
+                                                                Text(
+                                                                    text = parse(
+                                                                        value.getJSONObject("value")
+                                                                            .getString("Element_001")
+                                                                    )
                                                                 )
-                                                                else -> null
                                                             }
                                                         }
-                                                        Text(parse(first.getString("topStr")))
                                                     }
-                                                }
-                                            }
-                                            "Progress" -> item {
-                                                Column() {
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("forceValue")
-                                                        )
-                                                    )
-                                                    Text(
-                                                        text = value.getJSONObject("value")
-                                                            .getInt("maximum").toString()
-                                                    )
-                                                    Text(
-                                                        text = value.getJSONObject("value")
-                                                            .getInt("minimum").toString()
-                                                    )
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("title")
-                                                        )
-                                                    )
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("value")
-                                                        )
-                                                    )
-                                                }
-                                            }
-                                            "ItemTitle" -> item {
-                                                Column() {
-                                                    AsyncImage(
-                                                        model = value.getJSONObject("value")
-                                                            .getJSONObject("slotData")
-                                                            .getString("iconPath"),
-                                                        contentDescription = "장비 아이콘"
-                                                    )
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("leftStr0")
-                                                        )
-                                                    )
-                                                    Text(
-                                                        text = parse(
-                                                            value.getJSONObject("value")
-                                                                .getString("leftStr2")
-                                                        )
-                                                    )
-                                                    when (value.getJSONObject("value")
-                                                        .getInt("qualityValue") / 10) {
-                                                        0, 1, 2 -> Box(
-                                                            Modifier
-                                                                .fillMaxWidth()
-                                                                .height(5.dp)
-                                                                .padding(16.dp)
-                                                                .background(Color.Red)
-                                                        ) {}
-                                                        3, 4 -> Box(
-                                                            Modifier
-                                                                .fillMaxWidth()
-                                                                .height(5.dp)
-                                                                .padding(16.dp)
-                                                                .background(Color.Yellow)
-                                                        ) {}
-                                                        else -> Box(
-                                                            Modifier
-                                                                .fillMaxWidth()
-                                                                .height(5.dp)
-                                                                .padding(16.dp)
-                                                                .background(Color.Green)
-                                                        ) {}
+                                                    "IndentStringGroup" -> item {
+                                                        Column() {
+                                                            keyToList<JSONObject>(value.getJSONObject("value")).map { first ->
+                                                                keyToList<JSONObject>(first.getJSONObject("contentStr")).map { second ->
+                                                                    when (second["bPoint"]) {
+                                                                        true, 1 -> Text(
+                                                                            parse(
+                                                                                second.getString(
+                                                                                    "contentStr"
+                                                                                )
+                                                                            ), color = Color.White
+                                                                        )
+                                                                        false, 0 -> Text(
+                                                                            parse(
+                                                                                second.getString(
+                                                                                    "contentStr"
+                                                                                )
+                                                                            ), color = Color.DarkGray
+                                                                        )
+                                                                        else -> null
+                                                                    }
+                                                                }
+                                                                Text(parse(first.getString("topStr")))
+                                                            }
+                                                        }
+                                                    }
+                                                    "Progress" -> item {
+                                                        Column() {
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("forceValue")
+                                                                )
+                                                            )
+                                                            Text(
+                                                                text = value.getJSONObject("value")
+                                                                    .getInt("maximum").toString()
+                                                            )
+                                                            Text(
+                                                                text = value.getJSONObject("value")
+                                                                    .getInt("minimum").toString()
+                                                            )
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("title")
+                                                                )
+                                                            )
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("value")
+                                                                )
+                                                            )
+                                                        }
+                                                    }
+                                                    "ItemTitle" -> item {
+                                                        Column() {
+                                                            AsyncImage(
+                                                                model = value.getJSONObject("value")
+                                                                    .getJSONObject("slotData")
+                                                                    .getString("iconPath"),
+                                                                contentDescription = "장비 아이콘"
+                                                            )
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("leftStr0")
+                                                                )
+                                                            )
+                                                            Text(
+                                                                text = parse(
+                                                                    value.getJSONObject("value")
+                                                                        .getString("leftStr2")
+                                                                )
+                                                            )
+                                                            when (value.getJSONObject("value")
+                                                                .getInt("qualityValue") / 10) {
+                                                                0, 1, 2 -> Box(
+                                                                    Modifier
+                                                                        .fillMaxWidth()
+                                                                        .height(5.dp)
+                                                                        .padding(16.dp)
+                                                                        .background(Color.Red)
+                                                                ) {}
+                                                                3, 4 -> Box(
+                                                                    Modifier
+                                                                        .fillMaxWidth()
+                                                                        .height(5.dp)
+                                                                        .padding(16.dp)
+                                                                        .background(Color.Yellow)
+                                                                ) {}
+                                                                else -> Box(
+                                                                    Modifier
+                                                                        .fillMaxWidth()
+                                                                        .height(5.dp)
+                                                                        .padding(16.dp)
+                                                                        .background(Color.Green)
+                                                                ) {}
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -1799,10 +1852,12 @@ fun equipment(equipmentlist: SnapshotStateList<charterEquipment>, charterProfile
                             }
                         }
                     }
+
                 }
             }
         }
     }
+    // openDialog.value = !openDialog.value
 }
 inline fun <reified T> keyToList(key: JSONObject):List<T> {
     val list:ArrayList<T> = arrayListOf<T>()
@@ -1829,7 +1884,7 @@ fun tootipParse (str: String):String {
 }
 @ExperimentalPagerApi
 @Composable
-fun profileDetails(colosseums: SnapshotStateList<charterColosseums>, charterProfile: charterProfile) {
+fun profileDetails(colosseums: SnapshotStateList<charterColosseums?>, charterProfile: charterProfile) {
     val pagerState = rememberPagerState()
     val coroutineScope = rememberCoroutineScope()
         LazyColumn(Modifier.padding(16.dp)) {
@@ -1883,97 +1938,121 @@ fun profileDetails(colosseums: SnapshotStateList<charterColosseums>, charterProf
                     }
                 }
             }
-            items(colosseums.toList()) {
-                Column(Modifier.fillMaxWidth()) {
-                    Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
-                        Text("${it.Colosseums.last().seasonName}")
-                        Spacer(Modifier.width(10.dp))
-                        Text("현재 순위 : ${if(it.Rank == 0) "없음" else it.Rank?: "없음"}")
-                    }
-                    Spacer(Modifier.height(5.dp))
-                    HorizontalPager( // 가로로 스크롤 가능한 pager
-                        count = it.Colosseums.size, // 페이지 수
-                        state = pagerState // PagerState
-                    ) { page ->
-                        // 페이지 content
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(150.dp)) {
-                            Row(horizontalArrangement = Arrangement.SpaceAround, modifier = Modifier.fillMaxWidth()) {
-                                Column() {
-                                    if (it.Colosseums[pagerState.currentPage].competitive == null) {
-                                        Text("시즌정보없음")
-                                    } else {
-                                        Column() {
-                                            AsyncImage(it.Colosseums[pagerState.currentPage].competitive?.rankIcon, contentDescription = "랭크")
-                                            Text("${it.Colosseums[pagerState.currentPage].competitive?.rankName}")
-                                        }
-                                        Text("판수 : ${it.Colosseums[pagerState.currentPage].competitive?.playCount}")
-                                        Text("승패 : ${it.Colosseums[pagerState.currentPage].competitive?.victoryCount} / ${it.Colosseums[pagerState.currentPage].competitive?.loseCount}")
-                                    }
-                                }
-                                Column() {
-                                    if(it.Colosseums[pagerState.currentPage].teamDeathmatch == null) {
-                                        Text("팀데스매치 정보없음")
-                                    } else {
-                                        Text("판수 : ${it.Colosseums[pagerState.currentPage].teamDeathmatch?.playCount}")
-                                        Text("승패 : ${it.Colosseums[pagerState.currentPage].teamDeathmatch?.victoryCount} / ${it.Colosseums[pagerState.currentPage].teamDeathmatch?.loseCount}")
-                                    }
-
-                                    if(it.Colosseums[pagerState.currentPage].deathmatch == null) {
-                                        Text("데스매치 정보없음")
-                                    } else {
-                                        Text("판수 : ${it.Colosseums[pagerState.currentPage].deathmatch?.playCount}")
-                                        Text("승패 : ${it.Colosseums[pagerState.currentPage].deathmatch?.victoryCount} / ${it.Colosseums[pagerState.currentPage].deathmatch?.loseCount}")
-                                    }
-
-
-                                    if(it.Colosseums[pagerState.currentPage].teamElimination == null) {
-                                        Text("대장전 정보없음")
-                                    } else {
-                                        Text("판수 : ${it.Colosseums[pagerState.currentPage].teamElimination?.playCount}")
-                                        Text("승패 : ${it.Colosseums[pagerState.currentPage].teamElimination?.victoryCount} / ${it.Colosseums[pagerState.currentPage].teamElimination?.loseCount}")
-                                    }
-
-                                    if(it.Colosseums[pagerState.currentPage].coOpBattle == null) {
-                                        Text("시즌정보없음")
-                                    } else {
-                                        Text("판수 : ${it.Colosseums[pagerState.currentPage].coOpBattle?.playCount}")
-                                        Text("승패 : ${it.Colosseums[pagerState.currentPage].coOpBattle?.victoryCount} / ${it.Colosseums[pagerState.currentPage].coOpBattle?.loseCount}")
-                                    }
-
-                                }
-                            }
-                        }
-
-                    }
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        IconButton(
-                            onClick = {
-                                coroutineScope.launch {
-                                    if(pagerState.currentPage <= 0) return@launch
-                                    // animateScrollToPage 함수는 suspend function 이기 때문에 Coroutine scope 내에서 호출해야 함
-                                    pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                                }
-                            },
+            if(colosseums.isNullOrEmpty()) {
+                item{ Text("전적이 없습니다") }
+            } else {
+                items(colosseums.toList()) {
+                    if(it == null) {
+                        Text("전적 없음")
+                    } else {
+                        Column(Modifier.fillMaxWidth()) {
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                            Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "이전")
-                        }
-                        Text("${it.Colosseums[pagerState.currentPage].seasonName}", Modifier.padding(top = 14.dp))
-                        IconButton(
-                            onClick = {
-                                coroutineScope.launch {
-                                    if(pagerState.currentPage >= it.Colosseums.size) return@launch
-                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                Text("${it.Colosseums.last().seasonName}")
+                                Spacer(Modifier.width(10.dp))
+                                Text("현재 순위 : ${if (it.Rank == 0) "없음" else it.Rank ?: "없음"}")
+                            }
+                            Spacer(Modifier.height(5.dp))
+                            HorizontalPager( // 가로로 스크롤 가능한 pager
+                                count = it.Colosseums.size, // 페이지 수
+                                state = pagerState // PagerState
+                            ) { page ->
+                                // 페이지 content
+                                Box(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(150.dp)
+                                ) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.SpaceAround,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column() {
+                                            if (it.Colosseums[pagerState.currentPage].competitive == null) {
+                                                Text("시즌정보없음")
+                                            } else {
+                                                Column() {
+                                                    AsyncImage(
+                                                        it.Colosseums[pagerState.currentPage].competitive?.rankIcon,
+                                                        contentDescription = "랭크"
+                                                    )
+                                                    Text("${it.Colosseums[pagerState.currentPage].competitive?.rankName}")
+                                                }
+                                                Text("판수 : ${it.Colosseums[pagerState.currentPage].competitive?.playCount}")
+                                                Text("승패 : ${it.Colosseums[pagerState.currentPage].competitive?.victoryCount} / ${it.Colosseums[pagerState.currentPage].competitive?.loseCount}")
+                                            }
+                                        }
+                                        Column() {
+                                            if (it.Colosseums[pagerState.currentPage].teamDeathmatch == null) {
+                                                Text("팀데스매치 정보없음")
+                                            } else {
+                                                Text("판수 : ${it.Colosseums[pagerState.currentPage].teamDeathmatch?.playCount}")
+                                                Text("승패 : ${it.Colosseums[pagerState.currentPage].teamDeathmatch?.victoryCount} / ${it.Colosseums[pagerState.currentPage].teamDeathmatch?.loseCount}")
+                                            }
+
+                                            if (it.Colosseums[pagerState.currentPage].deathmatch == null) {
+                                                Text("데스매치 정보없음")
+                                            } else {
+                                                Text("판수 : ${it.Colosseums[pagerState.currentPage].deathmatch?.playCount}")
+                                                Text("승패 : ${it.Colosseums[pagerState.currentPage].deathmatch?.victoryCount} / ${it.Colosseums[pagerState.currentPage].deathmatch?.loseCount}")
+                                            }
+
+
+                                            if (it.Colosseums[pagerState.currentPage].teamElimination == null) {
+                                                Text("대장전 정보없음")
+                                            } else {
+                                                Text("판수 : ${it.Colosseums[pagerState.currentPage].teamElimination?.playCount}")
+                                                Text("승패 : ${it.Colosseums[pagerState.currentPage].teamElimination?.victoryCount} / ${it.Colosseums[pagerState.currentPage].teamElimination?.loseCount}")
+                                            }
+
+                                            if (it.Colosseums[pagerState.currentPage].coOpBattle == null) {
+                                                Text("시즌정보없음")
+                                            } else {
+                                                Text("판수 : ${it.Colosseums[pagerState.currentPage].coOpBattle?.playCount}")
+                                                Text("승패 : ${it.Colosseums[pagerState.currentPage].coOpBattle?.victoryCount} / ${it.Colosseums[pagerState.currentPage].coOpBattle?.loseCount}")
+                                            }
+
+                                        }
+                                    }
                                 }
 
                             }
-                        ) {
-                            Icon(Icons.Default.KeyboardArrowRight, contentDescription = "다음")
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            if (pagerState.currentPage <= 0) return@launch
+                                            // animateScrollToPage 함수는 suspend function 이기 때문에 Coroutine scope 내에서 호출해야 함
+                                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                        }
+                                    },
+                                ) {
+                                    Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "이전")
+                                }
+                                Text(
+                                    "${it.Colosseums[pagerState.currentPage].seasonName}",
+                                    Modifier.padding(top = 14.dp)
+                                )
+                                IconButton(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            if (pagerState.currentPage >= it.Colosseums.size) return@launch
+                                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                        }
+
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.KeyboardArrowRight,
+                                        contentDescription = "다음"
+                                    )
+                                }
+                            }
                         }
                     }
                 }

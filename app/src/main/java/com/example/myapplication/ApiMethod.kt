@@ -3,6 +3,7 @@ package com.example.myapplication
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.example.lostarkapp.retrofitAPI
 import com.example.myapplication.dataModel.*
 import retrofit2.Call
@@ -110,7 +111,7 @@ fun getJSONChaterSiblings(cList: MutableList<SiblingsData>, username: String) {
         }
     })
 }
-fun getJSONProfile(cList: MutableList<charterProfile>, ctx: Context, username: String) {
+fun getJSONProfile(cList: MutableList<charterProfile?>, ctx: Context, username: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -124,7 +125,7 @@ fun getJSONProfile(cList: MutableList<charterProfile>, ctx: Context, username: S
         override fun onResponse(call: Call<charterProfile?>, response: Response<charterProfile?>) {
             Log.d("아아","${response.code()}")
             if(response.isSuccessful) {
-                var cp: charterProfile = response.body()!!
+                var cp: charterProfile? = response.body()
                 Log.d("캐릭터캐릭터","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
@@ -136,6 +137,7 @@ fun getJSONProfile(cList: MutableList<charterProfile>, ctx: Context, username: S
             } else {
 
             }
+
         }
 
         override fun onFailure(call: Call<charterProfile?>, t: Throwable) {
@@ -143,8 +145,46 @@ fun getJSONProfile(cList: MutableList<charterProfile>, ctx: Context, username: S
         }
     })
 }
+fun getJSONProfileRetrunList(ctx: Context, username: String): MutableList<charterProfile?> {
+    val retrofit = Retrofit.Builder()
+        .baseUrl("https://developer-lostark.game.onstove.com/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
 
-fun getJSONProfileAvatars(cList: MutableList<charterAvatars>, ctx: Context, username: String) {
+    val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
+    val cList: MutableList<charterProfile?> = mutableListOf()
+    val call: Call<charterProfile> = retrofitAPIMethod.getCharterProfile(username)
+
+    call.enqueue(object : Callback<charterProfile?> {
+        override fun onResponse(call: Call<charterProfile?>, response: Response<charterProfile?>) {
+            Log.d("아아","${response.code()}")
+            if(response.isSuccessful) {
+                var cp: charterProfile? = response.body()
+                Log.d("캐릭터캐릭터List","${cp}\nㅁㅁㅁㅁ")
+                if(cList.isNotEmpty()) {
+                    cList.clear()
+                }
+                if(cp != null) {
+                    cList.add(cp)
+                } else {
+                    cList.add(null)
+                }
+
+            } else if(response.code() == 429){
+
+            } else {
+
+            }
+
+        }
+
+        override fun onFailure(call: Call<charterProfile?>, t: Throwable) {
+            t.printStackTrace()
+        }
+    })
+    return cList
+}
+fun getJSONProfileAvatars(cList: MutableList<charterAvatars?>, ctx: Context, username: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -158,12 +198,16 @@ fun getJSONProfileAvatars(cList: MutableList<charterAvatars>, ctx: Context, user
         override fun onResponse(call: Call<List<charterAvatars>?>, response: Response<List<charterAvatars>?>) {
             Log.d("아아","${response.code()}")
             if(response.isSuccessful) {
-                var cp: List<charterAvatars> = response.body()!!
+                var cp: List<charterAvatars?>? = response.body()
                 Log.d("아아","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
                 }
-                cList.addAll(cp)
+                if (cp != null) {
+                    cList.addAll(cp)
+                } else {
+                    cList.add(null)
+                }
 
             } else if(response.code() == 429){
 
@@ -177,7 +221,7 @@ fun getJSONProfileAvatars(cList: MutableList<charterAvatars>, ctx: Context, user
         }
     })
 }
-fun getJSONProfileEquipment(cList: MutableList<charterEquipment>, ctx: Context, username: String) {
+fun getJSONProfileEquipment(cList: MutableList<charterEquipment?>, ctx: Context, username: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -191,12 +235,17 @@ fun getJSONProfileEquipment(cList: MutableList<charterEquipment>, ctx: Context, 
         override fun onResponse(call: Call<List<charterEquipment>?>, response: Response<List<charterEquipment>?>) {
             Log.d("장비코드","${response.code()}")
             if(response.isSuccessful) {
-                var cp: List<charterEquipment> = response.body()!!
+                var cp: List<charterEquipment>? = response.body()
                 Log.d("장비","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
                 }
-                cList.addAll(cp)
+                if(cp != null) {
+                    cList.addAll(cp)
+                } else {
+                    cList.add(null)
+                }
+
 
             } else if(response.code() == 429){
 
@@ -210,7 +259,7 @@ fun getJSONProfileEquipment(cList: MutableList<charterEquipment>, ctx: Context, 
         }
     })
 }
-fun getJSONProfileCombatSkills(cList: MutableList<charterCombatSkills>, ctx: Context, username: String) {
+fun getJSONProfileCombatSkills(cList: MutableList<charterCombatSkills?>, ctx: Context, username: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -222,12 +271,16 @@ fun getJSONProfileCombatSkills(cList: MutableList<charterCombatSkills>, ctx: Con
         override fun onResponse(call: Call<List<charterCombatSkills>?>, response: Response<List<charterCombatSkills>?>) {
             Log.d("스킬스킬1","${response.code()}")
             if(response.isSuccessful) {
-                var cp: List<charterCombatSkills> = response.body()!!
+                var cp: List<charterCombatSkills>? = response.body()
                 Log.d("스킬스킬2","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
                 }
-                cList.addAll(cp)
+                if(cp != null) {
+                    cList.addAll(cp)
+                } else {
+                    cList.add(null)
+                }
 
             } else if(response.code() == 429){
 
@@ -241,7 +294,7 @@ fun getJSONProfileCombatSkills(cList: MutableList<charterCombatSkills>, ctx: Con
         }
     })
 }
-fun getJSONProfileEngravings(cList: MutableList<charterEngravings>, ctx: Context, username: String) {
+fun getJSONProfileEngravings(cList: MutableList<charterEngravings?>, ctx: Context, username: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -255,7 +308,7 @@ fun getJSONProfileEngravings(cList: MutableList<charterEngravings>, ctx: Context
         override fun onResponse(call: Call<charterEngravings?>, response: Response<charterEngravings?>) {
             Log.d("이펙트","${response.code()}")
             if(response.isSuccessful) {
-                var cp: charterEngravings = response.body()!!
+                var cp: charterEngravings? = response.body()
                 Log.d("이펙트","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
@@ -288,7 +341,7 @@ fun getJSONProfileCards(cList: MutableState<charterCards?>, ctx: Context, userna
         override fun onResponse(call: Call<charterCards?>, response: Response<charterCards?>) {
             Log.d("카드","${response.code()}")
             if(response.isSuccessful) {
-                var cp: charterCards = response.body()!!
+                var cp: charterCards? = response.body()
                 Log.d("카드","${cp}\nㅁㅁㅁㅁ")
                 cList.value = cp
 
@@ -305,7 +358,7 @@ fun getJSONProfileCards(cList: MutableState<charterCards?>, ctx: Context, userna
 
     })
 }
-fun getJSONProfileGems(cList: MutableList<charterGems>, ctx: Context, username: String) {
+fun getJSONProfileGems(cList: MutableList<charterGems?>, ctx: Context, username: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -340,7 +393,7 @@ fun getJSONProfileGems(cList: MutableList<charterGems>, ctx: Context, username: 
         }
     })
 }
-fun getJSONMarkets(cList: MutableList<marketsData>, ctx: Context) {
+fun getJSONMarkets(cList: MutableList<marketsData?>, ctx: Context) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -354,7 +407,7 @@ fun getJSONMarkets(cList: MutableList<marketsData>, ctx: Context) {
         override fun onResponse(call: Call<marketsData?>, response: Response<marketsData?>) {
             Log.d("아아","${response.code()}")
             if(response.isSuccessful) {
-                var cp: marketsData = response.body()!!
+                var cp: marketsData? = response.body()
                 Log.d("아아","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
@@ -373,7 +426,7 @@ fun getJSONMarkets(cList: MutableList<marketsData>, ctx: Context) {
         }
     })
 }
-fun getJSONAuctions(cList: MutableList<auctionsData>, ctx: Context) {
+fun getJSONAuctions(cList: MutableList<auctionsData?>, ctx: Context) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -387,7 +440,7 @@ fun getJSONAuctions(cList: MutableList<auctionsData>, ctx: Context) {
         override fun onResponse(call: Call<auctionsData?>, response: Response<auctionsData?>) {
             Log.d("아아","${response.code()}")
             if(response.isSuccessful) {
-                var cp: auctionsData = response.body()!!
+                var cp: auctionsData? = response.body()
                 Log.d("아아","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
@@ -406,7 +459,7 @@ fun getJSONAuctions(cList: MutableList<auctionsData>, ctx: Context) {
         }
     })
 }
-fun getJSONProfileColosseums(cList: MutableList<charterColosseums>, ctx: Context, username: String) {
+fun getJSONProfileColosseums(cList: MutableList<charterColosseums?>, ctx: Context, username: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -420,7 +473,7 @@ fun getJSONProfileColosseums(cList: MutableList<charterColosseums>, ctx: Context
         override fun onResponse(call: Call<charterColosseums?>, response: Response<charterColosseums?>) {
             Log.d("아아","${response.code()}")
             if(response.isSuccessful) {
-                var cp: charterColosseums = response.body()!!
+                var cp: charterColosseums? = response.body()
                 Log.d("아아","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
@@ -439,7 +492,7 @@ fun getJSONProfileColosseums(cList: MutableList<charterColosseums>, ctx: Context
         }
     })
 }
-fun getJSONProfileCollectibles(cList: MutableList<charterCollectibles>, ctx: Context, username: String) {
+fun getJSONProfileCollectibles(cList: MutableList<charterCollectibles?>, ctx: Context, username: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -453,12 +506,16 @@ fun getJSONProfileCollectibles(cList: MutableList<charterCollectibles>, ctx: Con
         override fun onResponse(call: Call<List<charterCollectibles>?>, response: Response<List<charterCollectibles>?>) {
             Log.d("컬렉션","${response.code()}")
             if(response.isSuccessful) {
-                var cp: List<charterCollectibles> = response.body()!!
+                var cp: List<charterCollectibles>? = response.body()
                 Log.d("컬렉션","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
                 }
-                cList.addAll(cp)
+                if(cp != null) {
+                    cList.addAll(cp)
+                } else {
+                    cList.add(null)
+                }
 
             } else if(response.code() == 429){
 
