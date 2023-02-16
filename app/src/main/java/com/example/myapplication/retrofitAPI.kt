@@ -5,6 +5,7 @@ import retrofit2.Call
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface retrofitAPI {
     companion object {
@@ -17,6 +18,9 @@ interface retrofitAPI {
     @Headers("$token")
     @GET("news/notices")
     fun getNotice(): Call<List<NewsNotiData>>
+    @Headers("$token")
+    @GET("guilds/rankings")
+    fun getGuildRanking(@Query("serverName") serverName: String): Call<List<auctionsData>>
     @Headers("$token")
     @GET("auctions/options")
     fun getAuctions(): Call<auctionsData>

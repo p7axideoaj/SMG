@@ -294,6 +294,41 @@ fun getJSONProfileCombatSkills(cList: MutableList<charterCombatSkills?>, ctx: Co
         }
     })
 }
+fun getJSONGuildRankList(cList: MutableList<auctionsData?>, ctx: Context, serverName: String) {
+    val retrofit = Retrofit.Builder()
+        .baseUrl("https://developer-lostark.game.onstove.com/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
+    val call: Call<List<auctionsData>> = retrofitAPIMethod.getGuildRanking(serverName)
+    call.enqueue(object : Callback<List<auctionsData>?> {
+        override fun onResponse(call: Call<List<auctionsData>?>, response: Response<List<auctionsData>?>) {
+            Log.d("스킬스킬1","${response.code()}")
+            if(response.isSuccessful) {
+                var cp: List<auctionsData>? = response.body()
+                Log.d("스킬스킬2","${cp}\nㅁㅁㅁㅁ")
+                if(cList.isNotEmpty()) {
+                    cList.clear()
+                }
+                if(cp != null) {
+                    cList.addAll(cp)
+                } else {
+                    cList.add(null)
+                }
+
+            } else if(response.code() == 429){
+
+            } else {
+
+            }
+        }
+
+        override fun onFailure(call: Call<List<auctionsData>?>, t: Throwable) {
+            Log.d("스킬스킬", "${t.message}")
+        }
+    })
+}
 fun getJSONProfileEngravings(cList: MutableList<charterEngravings?>, ctx: Context, username: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
