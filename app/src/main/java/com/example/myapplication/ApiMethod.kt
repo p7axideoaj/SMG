@@ -294,6 +294,7 @@ fun getJSONProfileCombatSkills(cList: MutableList<charterCombatSkills?>, ctx: Co
         }
     })
 }
+
 fun getJSONGuildRankList(cList: MutableList<auctionsData?>, ctx: Context, serverName: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
@@ -326,6 +327,74 @@ fun getJSONGuildRankList(cList: MutableList<auctionsData?>, ctx: Context, server
 
         override fun onFailure(call: Call<List<auctionsData>?>, t: Throwable) {
             Log.d("스킬스킬", "${t.message}")
+        }
+    })
+}
+fun getJSONAbyssRaidList(cList: MutableList<abyssRaidList?>, ctx: Context) {
+    val retrofit = Retrofit.Builder()
+        .baseUrl("https://developer-lostark.game.onstove.com/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
+    val call: Call<List<abyssRaidList>> = retrofitAPIMethod.getAbyssRaidList()
+    call.enqueue(object : Callback<List<abyssRaidList>?> {
+        override fun onResponse(call: Call<List<abyssRaidList>?>, response: Response<List<abyssRaidList>?>) {
+            Log.d("스킬스킬1","${response.code()}")
+            if(response.isSuccessful) {
+                var cp: List<abyssRaidList>? = response.body()
+                Log.d("스킬스킬2","${cp}\nㅁㅁㅁㅁ")
+                if(cList.isNotEmpty()) {
+                    cList.clear()
+                }
+                if(cp != null) {
+                    cList.addAll(cp)
+                } else {
+                    cList.add(null)
+                }
+
+            } else if(response.code() == 429){
+
+            } else {
+
+            }
+        }
+
+        override fun onFailure(call: Call<List<abyssRaidList>?>, t: Throwable) {
+            Log.d("스킬스킬", "${t.message}")
+        }
+    })
+}
+fun getJSONGuardianRaids(cList: MutableList<GuardianRaidsData?>, ctx: Context) {
+    val retrofit = Retrofit.Builder()
+        .baseUrl("https://developer-lostark.game.onstove.com/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
+
+    val call: Call<GuardianRaidsData> = retrofitAPIMethod.getGuardianRaidsList()
+
+    call.enqueue(object : Callback<GuardianRaidsData?> {
+        override fun onResponse(call: Call<GuardianRaidsData?>, response: Response<GuardianRaidsData?>) {
+            Log.d("이펙트","${response.code()}")
+            if(response.isSuccessful) {
+                var cp: GuardianRaidsData? = response.body()
+                Log.d("이펙트","${cp}\nㅁㅁㅁㅁ")
+                if(cList.isNotEmpty()) {
+                    cList.clear()
+                }
+                cList.add(cp)
+
+            } else if(response.code() == 429){
+
+            } else {
+
+            }
+        }
+
+        override fun onFailure(call: Call<GuardianRaidsData?>, t: Throwable) {
+            t.printStackTrace()
         }
     })
 }

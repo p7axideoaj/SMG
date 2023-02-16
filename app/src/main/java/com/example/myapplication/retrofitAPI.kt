@@ -28,6 +28,12 @@ interface retrofitAPI {
     @GET("markets/options")
     fun getMarkets(): Call<marketsData>
     @Headers("$token")
+    @GET("gamecontents/challenge-abyss-dungeons")
+    fun getAbyssRaidList(): Call<List<abyssRaidList>>
+    @Headers("$token")
+    @GET("gamecontents/challenge-guardian-raids")
+    fun getGuardianRaidsList(): Call<GuardianRaidsData>
+    @Headers("$token")
     @GET("characters/{username}/siblings")
     fun getCharterSiblings(@Path("username") username:String): Call<List<SiblingsData>>
     @Headers("$token")
