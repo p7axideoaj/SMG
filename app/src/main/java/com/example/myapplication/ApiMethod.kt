@@ -295,19 +295,19 @@ fun getJSONProfileCombatSkills(cList: MutableList<charterCombatSkills?>, ctx: Co
     })
 }
 
-fun getJSONGuildRankList(cList: MutableList<auctionsData?>, ctx: Context, serverName: String) {
+fun getJSONGuildRankList(cList: MutableList<guildData?>, serverName: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
     val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
-    val call: Call<List<auctionsData>> = retrofitAPIMethod.getGuildRanking(serverName)
-    call.enqueue(object : Callback<List<auctionsData>?> {
-        override fun onResponse(call: Call<List<auctionsData>?>, response: Response<List<auctionsData>?>) {
+    val call: Call<List<guildData>> = retrofitAPIMethod.getGuildRanking(serverName)
+    call.enqueue(object : Callback<List<guildData>?> {
+        override fun onResponse(call: Call<List<guildData>?>, response: Response<List<guildData>?>) {
             Log.d("스킬스킬1","${response.code()}")
             if(response.isSuccessful) {
-                var cp: List<auctionsData>? = response.body()
+                var cp: List<guildData>? = response.body()
                 Log.d("스킬스킬2","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
@@ -325,7 +325,7 @@ fun getJSONGuildRankList(cList: MutableList<auctionsData?>, ctx: Context, server
             }
         }
 
-        override fun onFailure(call: Call<List<auctionsData>?>, t: Throwable) {
+        override fun onFailure(call: Call<List<guildData>?>, t: Throwable) {
             Log.d("스킬스킬", "${t.message}")
         }
     })
@@ -361,6 +361,41 @@ fun getJSONAbyssRaidList(cList: MutableList<abyssRaidList?>, ctx: Context) {
         }
 
         override fun onFailure(call: Call<List<abyssRaidList>?>, t: Throwable) {
+            Log.d("스킬스킬", "${t.message}")
+        }
+    })
+}
+fun getJSONCalendar(cList: MutableList<CalendarData?>, ctx: Context) {
+    val retrofit = Retrofit.Builder()
+        .baseUrl("https://developer-lostark.game.onstove.com/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
+    val call: Call<List<CalendarData>> = retrofitAPIMethod.getCalendar()
+    call.enqueue(object : Callback<List<CalendarData>?> {
+        override fun onResponse(call: Call<List<CalendarData>?>, response: Response<List<CalendarData>?>) {
+            Log.d("스킬스킬1","${response.code()}")
+            if(response.isSuccessful) {
+                var cp: List<CalendarData>? = response.body()
+                Log.d("스킬스킬2","${cp}\nㅁㅁㅁㅁ")
+                if(cList.isNotEmpty()) {
+                    cList.clear()
+                }
+                if(cp != null) {
+                    cList.addAll(cp)
+                } else {
+                    cList.add(null)
+                }
+
+            } else if(response.code() == 429){
+
+            } else {
+
+            }
+        }
+
+        override fun onFailure(call: Call<List<CalendarData>?>, t: Throwable) {
             Log.d("스킬스킬", "${t.message}")
         }
     })

@@ -20,7 +20,7 @@ interface retrofitAPI {
     fun getNotice(): Call<List<NewsNotiData>>
     @Headers("$token")
     @GET("guilds/rankings")
-    fun getGuildRanking(@Query("serverName") serverName: String): Call<List<auctionsData>>
+    fun getGuildRanking(@Query("serverName") serverName: String): Call<List<guildData>>
     @Headers("$token")
     @GET("auctions/options")
     fun getAuctions(): Call<auctionsData>
@@ -33,6 +33,9 @@ interface retrofitAPI {
     @Headers("$token")
     @GET("gamecontents/challenge-guardian-raids")
     fun getGuardianRaidsList(): Call<GuardianRaidsData>
+    @Headers("$token")
+    @GET("gamecontents/calendar")
+    fun getCalendar(): Call<List<CalendarData>>
     @Headers("$token")
     @GET("characters/{username}/siblings")
     fun getCharterSiblings(@Path("username") username:String): Call<List<SiblingsData>>

@@ -11,7 +11,7 @@ data class abyssRaidList(
     @SerializedName("StartTime") val startTime: String?,
     @SerializedName("EndTime") val endTime: String?,
     @SerializedName("Image") val image: String?,
-    @SerializedName("rewardItems") val rewardItems: List<RewardList>,
+    @SerializedName("RewardItems") val rewardItems: List<RewardList>,
 )
 data class RewardList(
     @SerializedName("Name") val name: String?,
