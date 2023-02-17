@@ -330,7 +330,7 @@ fun getJSONGuildRankList(cList: MutableList<guildData?>, serverName: String) {
         }
     })
 }
-fun getJSONAbyssRaidList(cList: MutableList<abyssRaidList?>, ctx: Context) {
+fun getJSONAbyssRaidList(cList: MutableList<abyssRaidList?>) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())

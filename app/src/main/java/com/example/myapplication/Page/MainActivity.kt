@@ -12,6 +12,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -22,9 +26,12 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -32,9 +39,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import coil.imageLoader
+import coil.util.DebugLogger
+import com.example.myapplication.dataModel.abyssRaidList
 import com.example.myapplication.dataModel.newsData
 import com.example.myapplication.dataModel.charterProfile
 import com.example.myapplication.dataModel.guildData
+import com.example.myapplication.getJSONAbyssRaidList
 import com.example.myapplication.getJSONGuildRankList
 import com.example.myapplication.getJSONNewsDate
 import com.example.myapplication.getJSONProfile
@@ -45,11 +56,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-import java.time.LocalDateTime
-
 //import okhttp3.logging.HttpLoggingInterceptor
 
-val timer = LocalDateTime.now()
 class MainActivity : ComponentActivity() {
     lateinit var prefs: sharedHelper
     @OptIn(ExperimentalPagerApi::class)
@@ -96,6 +104,9 @@ fun Homepage(
     var guildRankList = remember {
         mutableStateListOf<guildData?>()
     }
+    var abyssRaidDataList = remember {
+        mutableStateListOf<abyssRaidList?>()
+    }
     val scope = MainScope()
     val scaffoldState = rememberScaffoldState()
     DisposableEffect(0){
@@ -106,6 +117,7 @@ fun Homepage(
                 if(!serverName.isNullOrEmpty()) {
                     getJSONGuildRankList(guildRankList, serverName)
                 }
+                getJSONAbyssRaidList(abyssRaidDataList)
                 delay(3000)
             }
         }
@@ -233,6 +245,107 @@ fun Homepage(
                             }
                         }
                     } }
+                }
+            }
+            item { Spacer(modifier = Modifier.height(10.dp)) }
+            item {Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                Text("심연의 던전")
+            }}
+            item { Spacer(modifier = Modifier.height(10.dp)) }
+            item {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)) {
+                    if(abyssRaidDataList.isNullOrEmpty()) {
+                        Text(text = "도전 어비스 정보를 불러오고 있습니다")
+                    } else {
+                        val imageLoader = LocalContext.current.imageLoader.newBuilder()
+                            .logger(DebugLogger())
+                            .build()
+                        var index by remember { mutableStateOf(-1) }
+                        LazyVerticalGrid(columns = GridCells.Fixed(1)) {
+                            itemsIndexed(abyssRaidDataList.toList()) { idx, it ->
+                                if (it == null) {
+                                    Text(text = "도전 어비스 정보를 불러오지 못헀습니다.")
+                                } else {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Box(Modifier.clickable { index = idx }) {
+                                            AsyncImage(
+                                                model = "${it.image}",
+                                                contentDescription = "보스이미지",
+                                                imageLoader = imageLoader,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(120.dp),
+                                                contentScale = ContentScale.Crop
+                                            )
+                                            Box(Modifier.align(Alignment.BottomEnd)) {
+                                                Text(text = "${it.name}", color = Color.White, modifier = Modifier.padding(end = 8.dp))
+                                           }
+                                        }
+                                        Box() {
+                                            Text(text = "${it.startTime} ~ ${it.endTime}")
+                                        }
+                                    }
+                                    if (index != -1) {
+                                        Dialog(
+                                            onDismissRequest = {
+                                                index = -1
+                                            }
+                                        ) {
+                                            Surface(
+                                                modifier = Modifier
+                                                    .width(270.dp)
+                                                    .padding(10.dp),
+                                                color = Color.White
+                                            ) {
+                                                Box(Modifier.fillMaxSize()) {
+                                                    LazyColumn() {
+                                                        item {
+                                                            if(abyssRaidDataList[index] == null) {
+                                                                Text(text = "도전 어비스 정보를 불러오지 못헀습니다.")
+                                                            } else {
+                                                                AsyncImage(
+                                                                    model = "${abyssRaidDataList[index]!!.image}",
+                                                                    contentDescription = "심연 이미지",
+                                                                    modifier = Modifier
+                                                                        .fillMaxWidth()
+                                                                        .height(120.dp),
+                                                                    contentScale = ContentScale.Crop
+                                                                )
+                                                                Text(text = "이름 : ${abyssRaidDataList[index]!!.name}")
+                                                                Text(text = "설명 : ${abyssRaidDataList[index]!!.description}")
+                                                                Text(text = "최소 권장 레벨 : ${abyssRaidDataList[index]!!.minCharacterLevel}")
+                                                                Text(text = "최소 권장 아이템 레벨 : ${abyssRaidDataList[index]!!.minItemLevel}")
+                                                                Text(text = "지역 : ${abyssRaidDataList[index]!!.areaName}")
+                                                                Text(text = "${abyssRaidDataList[index]!!.startTime} ~ ${abyssRaidDataList[index]!!.endTime}")
+                                                                Box(Modifier.fillMaxWidth().height(100.dp)) {
+                                                                    LazyVerticalGrid(
+                                                                        columns = GridCells.Fixed(2),
+                                                                    ) {
+                                                                        items(abyssRaidDataList[index]!!.rewardItems) {
+                                                                            Column {
+                                                                                AsyncImage(
+                                                                                    model = "${it.icon}",
+                                                                                    contentDescription = "${it.name}"
+                                                                                )
+                                                                                Text("이름 : ${it.name}")
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
