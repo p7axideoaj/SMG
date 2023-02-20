@@ -1,14 +1,10 @@
 package com.example.myapplication.Page
 
 import android.content.Context
-import android.os.Bundle
 import android.util.Log
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -16,36 +12,32 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
-import com.example.lostarkapp.retrofitAPI
+import com.example.myapplication.*
 import com.example.myapplication.dataModel.charterProfile
 import com.example.myapplication.dbHelper.DBSearchData
 import com.example.myapplication.sharedHelper.sharedHelper
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 @Composable
 fun SerachPageHome(navController: NavController, prefs: sharedHelper, context: Context) {
     Column(modifier = Modifier.fillMaxSize()) {
-        SerachHeader(navController)
+        SerachHeader(navController, context)
         listView(context, navController)
     }
 }
 
 @Composable
-fun SerachHeader(navController: NavController) {
+fun SerachHeader(navController: NavController, context: Context) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -56,7 +48,7 @@ fun SerachHeader(navController: NavController) {
         } } }) {
             Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "back")
         }
-        inputName(navController = navController)
+        inputName(navController = navController, context)
     }
 }
 @Composable
@@ -109,8 +101,26 @@ fun listView(context: Context, navController: NavController) {
     }
 }
 @Composable
-fun inputName(navController: NavController) {
+fun inputName(navController: NavController, context: Context) {
+    var userlist = remember {
+        mutableStateListOf<charterProfile?>()
+    }
+    val scope = MainScope()
     var text by remember { mutableStateOf("") }
+    DisposableEffect(0){
+        scope.launch {
+            while (true) {
+                getJSONProfile(userlist, context, text)
+                delay(3000)
+            }
+        }
+        onDispose {
+            scope.cancel()
+        }
+    }
+    var index by remember {
+        mutableStateOf(-1)
+    }
     var flag by remember { mutableStateOf(true) }
     Box() {
         Row() {
@@ -125,7 +135,13 @@ fun inputName(navController: NavController) {
             }
             if (flag) {
             } else {
-                IconButton(onClick = { navController.navigate("profileDetail/${text}") }) {
+                IconButton(onClick = {
+                    if(userlist.isNullOrEmpty()) {
+                        index = 0
+                    } else {
+                        navController.navigate("profileDetail/${text}")
+                    }
+                }) {
                     Icon(imageVector = Icons.Default.Search, contentDescription = "search")
                 }
             }

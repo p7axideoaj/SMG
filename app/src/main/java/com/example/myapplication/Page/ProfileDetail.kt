@@ -243,6 +243,7 @@ fun profileContent(
         }
         onDispose {
             scope.cancel()
+            charArr.clear()
         }
     }
     val pages = listOf("캐릭터 정보", "아이템", "스킬", "수집품")

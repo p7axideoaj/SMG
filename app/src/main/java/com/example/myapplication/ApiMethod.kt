@@ -365,7 +365,7 @@ fun getJSONAbyssRaidList(cList: MutableList<abyssRaidList?>) {
         }
     })
 }
-fun getJSONCalendar(cList: MutableList<CalendarData?>, ctx: Context) {
+fun getJSONCalendar(cList: MutableList<CalendarData?>) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -400,7 +400,7 @@ fun getJSONCalendar(cList: MutableList<CalendarData?>, ctx: Context) {
         }
     })
 }
-fun getJSONGuardianRaids(cList: MutableList<GuardianRaidsData?>, ctx: Context) {
+fun getJSONGuardianRaids(cList: MutableList<GuardianRaidsData?>) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -415,7 +415,6 @@ fun getJSONGuardianRaids(cList: MutableList<GuardianRaidsData?>, ctx: Context) {
             Log.d("이펙트","${response.code()}")
             if(response.isSuccessful) {
                 var cp: GuardianRaidsData? = response.body()
-                Log.d("이펙트","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
                 }
