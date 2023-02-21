@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -78,6 +77,7 @@ class MainActivity : ComponentActivity() {
                     composable("calendar") {CalendarPage(navController, context)}
                     composable("guildRank") { GuildRankPage(navController) }
                     composable("addUser") { addUser(navController, prefs) }
+                    composable("markets") { MarketPage(navController)}
                 }
 
         }
@@ -146,6 +146,12 @@ fun Homepage(
                     Row(horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(text = "검색")
                         Icon(imageVector = Icons.Default.Search, contentDescription = "검색아이콘")
+                    }
+                }
+                Box(Modifier.clickable { navController.navigate("markets") }) {
+                    Row(horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(text = "거래소 바로가기")
+                        Icon(imageVector = Icons.Default.Done, contentDescription = "경매장")
                     }
                 }
                 var name by remember {

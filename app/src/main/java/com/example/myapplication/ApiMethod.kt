@@ -111,6 +111,73 @@ fun getJSONChaterSiblings(cList: MutableList<SiblingsData>, username: String) {
         }
     })
 }
+fun getJSONMarketsItemData(cList: MutableList<marketsItemData>, itemId: Int) {
+    val retrofit = Retrofit.Builder()
+        .baseUrl("https://developer-lostark.game.onstove.com/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
+
+    val call: Call<List<marketsItemData>> = retrofitAPIMethod.getItemCodeData(itemId)
+
+    call.enqueue(object : Callback<List<marketsItemData>?> {
+        override fun onResponse(call: Call<List<marketsItemData>?>, response: Response<List<marketsItemData>?>) {
+            Log.d("아아","${response.code()}")
+            if(response.isSuccessful) {
+                var list: List<marketsItemData> = response.body()!!
+                Log.d("실블실블","${list}")
+                if(cList.isNotEmpty()) {
+                    cList.clear()
+                }
+                cList.addAll(list)
+
+            } else if(response.code() == 429){
+
+            } else {
+
+            }
+        }
+
+        override fun onFailure(call: Call<List<marketsItemData>?>, t: Throwable) {
+
+        }
+    })
+}
+fun getJSONMarketsOption(cList: MutableList<marketsOption?>) {
+    val retrofit = Retrofit.Builder()
+        .baseUrl("https://developer-lostark.game.onstove.com/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
+
+    val call: Call<marketsOption> = retrofitAPIMethod.getItemCodeData(sort = "GRADE", categoryCode = 0, characterClass = "", itemTier = 0, itemGrade = "", itemName = "", pageNo = 0, sortCondition = "ASC")
+
+    call.enqueue(object : Callback<marketsOption?> {
+        override fun onResponse(call: Call<marketsOption?>, response: Response<marketsOption?>) {
+            Log.d("아아","${response.code()}")
+            if(response.isSuccessful) {
+                var cp: marketsOption? = response.body()
+                Log.d("캐릭터캐릭터","${cp}\nㅁㅁㅁㅁ")
+                if(cList.isNotEmpty()) {
+                    cList.clear()
+                }
+                cList.add(cp)
+
+            } else if(response.code() == 429){
+
+            } else {
+
+            }
+
+        }
+
+        override fun onFailure(call: Call<marketsOption?>, t: Throwable) {
+            t.printStackTrace()
+        }
+    })
+}
 fun getJSONProfile(cList: MutableList<charterProfile?>, ctx: Context, username: String) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")

@@ -2,10 +2,7 @@ package com.example.lostarkapp
 
 import com.example.myapplication.dataModel.*
 import retrofit2.Call
-import retrofit2.http.GET
-import retrofit2.http.Headers
-import retrofit2.http.Path
-import retrofit2.http.Query
+import retrofit2.http.*
 
 interface retrofitAPI {
     companion object {
@@ -27,6 +24,22 @@ interface retrofitAPI {
     @Headers("$token")
     @GET("markets/options")
     fun getMarkets(): Call<marketsData>
+    @Headers("$token")
+    @GET("markets/items/{itemId}")
+    fun getItemCodeData(@Path("itemId") itemCode:Int): Call<List<marketsItemData>>
+    @Headers("$token")
+    @FormUrlEncoded
+    @POST("markets/items")
+    fun getItemCodeData(
+        @Field("Sort") sort:String,
+        @Field("CategoryCode") categoryCode:Int,
+        @Field("CharacterClass") characterClass:String,
+        @Field("ItemTier") itemTier:Int,
+        @Field("ItemGrade") itemGrade:String,
+        @Field("ItemName") itemName:String,
+        @Field("PageNo") pageNo:Int,
+        @Field("SortCondition") sortCondition:String,
+    ): Call<marketsOption>
     @Headers("$token")
     @GET("gamecontents/challenge-abyss-dungeons")
     fun getAbyssRaidList(): Call<List<abyssRaidList>>
