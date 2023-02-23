@@ -3,7 +3,6 @@ package com.example.myapplication
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.example.lostarkapp.retrofitAPI
 import com.example.myapplication.dataModel.*
 import retrofit2.Call
@@ -111,7 +110,7 @@ fun getJSONChaterSiblings(cList: MutableList<SiblingsData>, username: String) {
         }
     })
 }
-fun getJSONMarketsItemData(cList: MutableList<marketsItemData>, itemId: Int) {
+fun getJSONMarketsItemData(cList: MutableList<marketsItemData?>, itemId: Int) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -123,10 +122,10 @@ fun getJSONMarketsItemData(cList: MutableList<marketsItemData>, itemId: Int) {
 
     call.enqueue(object : Callback<List<marketsItemData>?> {
         override fun onResponse(call: Call<List<marketsItemData>?>, response: Response<List<marketsItemData>?>) {
-            Log.d("아아","${response.code()}")
+            Log.d("도토리묵","${response.code()}")
             if(response.isSuccessful) {
                 var list: List<marketsItemData> = response.body()!!
-                Log.d("실블실블","${list}")
+                Log.d("도토리묵","${list}")
                 if(cList.isNotEmpty()) {
                     cList.clear()
                 }
@@ -140,11 +139,18 @@ fun getJSONMarketsItemData(cList: MutableList<marketsItemData>, itemId: Int) {
         }
 
         override fun onFailure(call: Call<List<marketsItemData>?>, t: Throwable) {
-
+            Log.d("오률오류율유ㅗ류ㅗㅠㅁㄹ오ㅠㄹㅇ노ㅠㅗ",t.message?: "null")
         }
     })
 }
-fun getJSONMarketsOption(cList: MutableList<marketsOption?>) {
+fun getJSONMarketsOption(
+    cList: MutableList<marketsOption?>,
+    itemName: String,
+    itemGrade: String?,
+    itemTier: Int?,
+    characterClass: String?,
+    categoryCode: Int
+) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -152,14 +158,14 @@ fun getJSONMarketsOption(cList: MutableList<marketsOption?>) {
 
     val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
 
-    val call: Call<marketsOption> = retrofitAPIMethod.getItemCodeData(sort = "GRADE", categoryCode = 0, characterClass = "", itemTier = 0, itemGrade = "", itemName = "", pageNo = 0, sortCondition = "ASC")
+    val call: Call<marketsOption> = retrofitAPIMethod.getItemCodeData(sort = "GRADE", categoryCode = categoryCode, characterClass = characterClass, itemTier = itemTier, itemGrade = itemGrade, itemName = itemName, pageNo = 0, sortCondition = "ASC")
 
     call.enqueue(object : Callback<marketsOption?> {
         override fun onResponse(call: Call<marketsOption?>, response: Response<marketsOption?>) {
             Log.d("아아","${response.code()}")
             if(response.isSuccessful) {
                 var cp: marketsOption? = response.body()
-                Log.d("캐릭터캐릭터","${cp}\nㅁㅁㅁㅁ")
+                Log.d("앙마켓아이템띠","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
                 }
@@ -598,7 +604,7 @@ fun getJSONProfileGems(cList: MutableList<charterGems?>, ctx: Context, username:
         }
     })
 }
-fun getJSONMarkets(cList: MutableList<marketsData?>, ctx: Context) {
+fun getJSONMarkets(cList: MutableList<marketsData?>) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())

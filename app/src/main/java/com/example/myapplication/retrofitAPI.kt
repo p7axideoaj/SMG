@@ -26,16 +26,16 @@ interface retrofitAPI {
     fun getMarkets(): Call<marketsData>
     @Headers("$token")
     @GET("markets/items/{itemId}")
-    fun getItemCodeData(@Path("itemId") itemCode:Int): Call<List<marketsItemData>>
+    fun getItemCodeData(@Path("itemId") itemId:Int): Call<List<marketsItemData>>
     @Headers("$token")
     @FormUrlEncoded
     @POST("markets/items")
     fun getItemCodeData(
         @Field("Sort") sort:String,
         @Field("CategoryCode") categoryCode:Int,
-        @Field("CharacterClass") characterClass:String,
-        @Field("ItemTier") itemTier:Int,
-        @Field("ItemGrade") itemGrade:String,
+        @Field("CharacterClass") characterClass:String?,
+        @Field("ItemTier") itemTier:Int?,
+        @Field("ItemGrade") itemGrade:String?,
         @Field("ItemName") itemName:String,
         @Field("PageNo") pageNo:Int,
         @Field("SortCondition") sortCondition:String,

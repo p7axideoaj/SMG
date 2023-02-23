@@ -11,6 +11,6 @@ data class marketsItemData(
     )
 data class ItemStats(
     @SerializedName("Date") val date: String?,
-    @SerializedName("AvgPrice") val avgPrice: Int?,
+    @SerializedName("AvgPrice") val avgPrice: Double?,
     @SerializedName("TradeCount") val tradeCount: Int?,
 )
