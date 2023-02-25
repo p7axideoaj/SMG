@@ -30,6 +30,24 @@ interface retrofitAPI {
     @Headers("$token")
     @FormUrlEncoded
     @POST("markets/items")
+    fun getAuctionData(
+        @Field("ItemLevelMin") itemLevelMin:Int?,
+        @Field("ItemLevelMax") itemLevelMax:Int?,
+        @Field("ItemGradeQuality") itemGradeQuality:Int?,
+        @Field("SkillOptions") skillOptions:List<findOption>?,
+        @Field("EtcOptions") etcOptions:List<findOption>?,
+        @Field("Sort") sort:String,
+        @Field("CategoryCode") categoryCode:Int,
+        @Field("CharacterClass") characterClass:String?,
+        @Field("ItemTier") itemTier:Int?,
+        @Field("ItemGrade") itemGrade:String?,
+        @Field("ItemName") itemName:String?,
+        @Field("PageNo") pageNo:Int,
+        @Field("SortCondition") sortCondition:String,
+    ): Call<auctionItemsData>
+    @Headers("$token")
+    @FormUrlEncoded
+    @POST("markets/items")
     fun getItemCodeData(
         @Field("Sort") sort:String,
         @Field("CategoryCode") categoryCode:Int,

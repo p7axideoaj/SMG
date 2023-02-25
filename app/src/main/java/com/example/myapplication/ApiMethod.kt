@@ -637,7 +637,7 @@ fun getJSONMarkets(cList: MutableList<marketsData?>) {
         }
     })
 }
-fun getJSONAuctions(cList: MutableList<auctionsData?>, ctx: Context) {
+fun getJSONAuctions(cList: MutableList<auctionsData?>) {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -666,6 +666,56 @@ fun getJSONAuctions(cList: MutableList<auctionsData?>, ctx: Context) {
         }
 
         override fun onFailure(call: Call<auctionsData?>, t: Throwable) {
+            t.printStackTrace()
+        }
+    })
+}
+fun getJSONAuctionsData(cList: MutableList<auctionItemsData?>,
+                        itemLevelMin: Int?, itemLevelMax: Int?, itemGradeQuality: Int?,skillOptions: List<findOption>?, etcOptions: List<findOption>?,
+                        categoryCode: Int, characterClass: String?, itemTier: Int?, itemGrade: String?, itemName: String?
+                        )  {
+    val retrofit = Retrofit.Builder()
+        .baseUrl("https://developer-lostark.game.onstove.com/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
+
+    val call: Call<auctionItemsData> = retrofitAPIMethod.getAuctionData(
+        itemLevelMin = itemLevelMin,
+        itemLevelMax = itemLevelMax,
+        itemGradeQuality = itemGradeQuality,
+        skillOptions = skillOptions,
+        etcOptions = etcOptions,
+        sort = "BIDSTART_PRICE",
+        categoryCode = categoryCode,
+        characterClass = characterClass,
+        itemTier = itemTier,
+        itemGrade = itemGrade,
+        itemName = itemName,
+        pageNo = 0,
+        sortCondition = "ASC",
+    )
+
+    call.enqueue(object : Callback<auctionItemsData?> {
+        override fun onResponse(call: Call<auctionItemsData?>, response: Response<auctionItemsData?>) {
+            Log.d("아아","${response.code()}")
+            if(response.isSuccessful) {
+                var cp: auctionItemsData? = response.body()
+                Log.d("아아","${cp}\nㅁㅁㅁㅁ")
+                if(cList.isNotEmpty()) {
+                    cList.clear()
+                }
+                cList.add(cp)
+
+            } else if(response.code() == 429){
+
+            } else {
+
+            }
+        }
+
+        override fun onFailure(call: Call<auctionItemsData?>, t: Throwable) {
             t.printStackTrace()
         }
     })

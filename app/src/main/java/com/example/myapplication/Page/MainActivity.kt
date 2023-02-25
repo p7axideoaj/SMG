@@ -74,12 +74,12 @@ class MainActivity : ComponentActivity() {
                         it.arguments?.getString("username")
                             ?.let { it1 -> ProfileDetailHome(navController, it1, context, lifecycleScope)}
                     }
+                    composable("action") { actionPage(navController)}
                     composable("calendar") {CalendarPage(navController, context)}
                     composable("guildRank") { GuildRankPage(navController) }
                     composable("addUser") { addUser(navController, prefs) }
                     composable("markets") { MarketPage(navController)}
                 }
-
         }
     }
 }
@@ -151,6 +151,12 @@ fun Homepage(
                 Box(Modifier.clickable { navController.navigate("markets") }) {
                     Row(horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(text = "거래소 바로가기")
+                        Icon(imageVector = Icons.Default.Done, contentDescription = "거래소")
+                    }
+                }
+                Box(Modifier.clickable { navController.navigate("action") }) {
+                    Row(horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(text = "경매장 바로가기")
                         Icon(imageVector = Icons.Default.Done, contentDescription = "경매장")
                     }
                 }
