@@ -673,14 +673,23 @@ fun getJSONAuctions(cList: MutableList<auctionsData?>) {
 fun getJSONAuctionsData(cList: MutableList<auctionItemsData?>,
                         itemLevelMin: Int?, itemLevelMax: Int?, itemGradeQuality: Int?,skillOptions: List<findOption>?, etcOptions: List<findOption>?,
                         categoryCode: Int, characterClass: String?, itemTier: Int?, itemGrade: String?, itemName: String?
-                        )  {
+                        ,pageNo: Int)  {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
     val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
-
+    Log.d("데데이터들", "itemLevelMin = $itemLevelMin,\n" +
+            "itemLevelMax = $itemLevelMax,\n" +
+            "itemGradeQuality = $itemGradeQuality,\n" +
+            "skillOptions = $skillOptions,\n" +
+            "etcOptions = $etcOptions,\n" +
+            "categoryCode = $categoryCode,\n" +
+            "characterClass = $characterClass,\n" +
+            "itemTier = $itemTier,\n" +
+            "itemGrade = $itemGrade,\n" +
+            "itemName = $itemName,")
     val call: Call<auctionItemsData> = retrofitAPIMethod.getAuctionData(
         itemLevelMin = itemLevelMin,
         itemLevelMax = itemLevelMax,
@@ -693,7 +702,7 @@ fun getJSONAuctionsData(cList: MutableList<auctionItemsData?>,
         itemTier = itemTier,
         itemGrade = itemGrade,
         itemName = itemName,
-        pageNo = 0,
+        pageNo = pageNo,
         sortCondition = "ASC",
     )
 

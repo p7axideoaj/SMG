@@ -83,7 +83,9 @@ fun actionPage(navController: NavHostController) {
     var auctionsDataExpanded by remember {
         mutableStateOf(false)
     }
-    var dataList = findOption(0,0,0,0)
+    var dataList by remember {
+        mutableStateOf(findOption(null,null,null,null))
+    }
     var auctionsDataText by remember {
         mutableStateOf("선택 사항 없음")
     }
@@ -112,7 +114,9 @@ fun actionPage(navController: NavHostController) {
     var auctionsEtcDataExpanded by remember {
         mutableStateOf(false)
     }
-    var etcDataList = findOption(0,0,0,0)
+    var etcDataList by remember {
+        mutableStateOf(findOption(null,null,null,null))
+    }
     var auctionsDataEtcText by remember {
         mutableStateOf("선택 사항 없음")
     }
@@ -128,14 +132,8 @@ fun actionPage(navController: NavHostController) {
     var etcMinLevel by remember {
         mutableStateOf(0)
     }
-    var etcMinLevelText by remember {
-        mutableStateOf("")
-    }
     var etcMaxLevel by remember {
         mutableStateOf(0)
-    }
-    var etcMaxLevelText by remember {
-        mutableStateOf("")
     }
     var itemGradeQualities by remember {
         mutableStateOf(0)
@@ -146,27 +144,26 @@ fun actionPage(navController: NavHostController) {
     var itemMaxLevel by remember {
         mutableStateOf(0)
     }
-    var itemMaxLevelText by remember {
-        mutableStateOf("")
-    }
     var itemMinLevel by remember {
         mutableStateOf(0)
     }
-    var itemMinLevelText by remember {
-        mutableStateOf("")
-    }
     val itemDataList = remember {
         mutableStateListOf<auctionItemsData?>()
+    }
+    var pageNo by remember {
+        mutableStateOf(0)
     }
     DisposableEffect(0){
         scope.launch {
             while (true) {
                 getJSONAuctions(auctionsDataList)
-                getJSONAuctionsData(itemDataList, itemLevelMin = if(itemTier == 0) null else itemMinLevel,
-                    itemLevelMax = if(itemTier == 0) null else itemMaxLevel, itemGradeQuality = if(itemTier == 0) null else itemGradeQualities,
+                Log.d("데이터들", "skills : ${dataList} / etcs : ${etcDataList}")
+                getJSONAuctionsData(itemDataList, itemLevelMin = if(itemMinLevel == 0) null else itemMinLevel,
+                    itemLevelMax = if(itemMaxLevel == 0) null else itemMaxLevel, itemGradeQuality = if(itemGradeQualities == 0) null else itemGradeQualities,
                     skillOptions = listOf(dataList), etcOptions = listOf(etcDataList),
                     categoryCode = categoryCode, characterClass = if(characterClass == "선택 사항 없음") null else characterClass,
-                    itemTier = if(itemTier == 0) null else itemTier, itemGrade = if(itemGrade == "선택 사항 없음") null else itemGrade, itemName = if(itemName == "") null else itemName
+                    itemTier = if(itemTier == 0) null else itemTier, itemGrade = if(itemGrade == "") null else itemGrade,
+                    itemName = if(itemName == "") null else itemName, pageNo = pageNo
                     )
                 delay(2500)
             }
@@ -276,14 +273,14 @@ fun actionPage(navController: NavHostController) {
                                 }
                             }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                             TextField(value = "$itemMaxLevel", onValueChange = {
-                                itemMaxLevel = if(auctionsData.maxItemLevel < it.toInt() ) {
-                                    1700
-                                } else if(it != "") {
+                                itemMaxLevel = if(it != "") {
                                     0
+                                } else if(auctionsData.maxItemLevel < it.toInt()) {
+                                    1700
                                 } else {
                                     it.toInt()
                                 }
-                            })
+                            }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                         }
                 }
                 TextField(value = itemName, onValueChange = {itemName = it})
@@ -474,22 +471,22 @@ fun actionPage(navController: NavHostController) {
                 }
                 Column() {
                     TextField(value = "${skillMinLevel}", onValueChange = {
-                        if(skillMinLevel is Int|| it != "") {
+                        if(it != "") {
                             skillMinLevel = it.toInt()
                             dataList.minValue = skillMinLevel
                         } else {
                             skillMinLevel = 0
                         }
 
-                    })
+                    }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                     TextField(value = "${skillsMaxLevel}", onValueChange = {
-                        if(skillsMaxLevel is Int || it != "") {
+                        if(it != "") {
                             skillsMaxLevel = it.toInt()
                             dataList.maxValue = skillsMaxLevel
                         } else {
                             skillsMaxLevel = 0
                         }
-                    })
+                    }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                 }
                 // etc
                 Column() {
@@ -563,22 +560,22 @@ fun actionPage(navController: NavHostController) {
                 }
                 Column() {
                     TextField(value = "$etcMinLevel", onValueChange = {
-                        if(etcMinLevel is Int) {
+                        if(it != "") {
                             etcMinLevel = it.toInt()
                             etcDataList.minValue = etcMinLevel
                         } else {
                             etcMinLevel = 0
                         }
 
-                    })
+                    }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                     TextField(value = "$etcMaxLevel", onValueChange = {
-                        if(etcMaxLevel is Int) {
+                        if(it != "") {
                             etcMaxLevel = it.toInt()
                             etcDataList.maxValue = etcMaxLevel
                         } else {
                             etcMaxLevel = 0
                         }
-                    })
+                    }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                 }
             }
             item { Spacer(modifier = Modifier.height(5.dp)) }
@@ -589,23 +586,19 @@ fun actionPage(navController: NavHostController) {
                     if(itemData == null || itemData.items.isNullOrEmpty()) {
                         Text(text = "아이템을 불러오는 중입니다")
                     } else {
-                        itemData.items.forEach { itemData ->
-                            if(itemData == null) {
-                                Text(text = "아이템을 불러오는 중입니다")
-                            } else {
-                                Row() {
-                                    AsyncImage(model = "${itemData.icon}", contentDescription = "${itemData.name}")
-                                    Column() {
-                                        Row {
-                                           Text(text = "${itemData.name}")
-                                           Text(text = "${itemData.Level}")
-                                        }
-                                        Row {
-                                            Text(text = "${itemData.gradeQuality}")
-                                            itemData.options.forEach { option ->
-                                                Text(text = "${option.optionName}")
-                                                // 이미지로 교체 예정(tripods)
-                                            }
+                        itemData.items.forEach { item ->
+                            Row() {
+                                AsyncImage(model = "${item.icon}", contentDescription = "${item.name}")
+                                Column() {
+                                    Row {
+                                       Text(text = "${item.name}")
+                                       Text(text = "${item.Level}")
+                                    }
+                                    Row {
+                                        Text(text = "${item.gradeQuality}")
+                                        item.options.forEach { option ->
+                                            Text(text = "${option.optionName}")
+                                            // 이미지로 교체 예정(tripods)
                                         }
                                     }
                                 }
