@@ -270,7 +270,7 @@ fun profileContent(
                                     Text("이미지 없음")
                                 }
                             } else {
-                                AsyncImage(model = "${charArr[i][0]!!.CharacterImage!!}", contentDescription = "캐릭터 이미지"))
+                                AsyncImage(model = "${charArr[i][0]!!.CharacterImage!!}", contentDescription = "캐릭터 이미지")
                             }
                             Text("캐릭터이름 : ${s.characterName}", fontSize = 8.sp)
                             Text("서버이름 : ${s.serverName}", fontSize = 8.sp)
