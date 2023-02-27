@@ -6,7 +6,7 @@ data class auctionItemsData(
     @SerializedName("PageNo") val pageNo: Int?,
     @SerializedName("PageSize") val pageSize: Int?,
     @SerializedName("TotalCount") val totalCount: Int?,
-    @SerializedName("Items") val items: List<itemsList>,
+    @SerializedName("Items") val items: List<itemsList?>,
 )
 data class itemsList(
     @SerializedName("Name") val name: String?,

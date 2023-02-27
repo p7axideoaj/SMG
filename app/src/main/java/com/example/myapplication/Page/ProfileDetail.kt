@@ -51,8 +51,11 @@ import org.json.JSONObject
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import coil.imageLoader
+import coil.util.DebugLogger
 
 
 @ExperimentalPagerApi
@@ -267,12 +270,7 @@ fun profileContent(
                                     Text("이미지 없음")
                                 }
                             } else {
-                                if(charArr[i][0]!!.CharacterImage!!.contains("https://img.lostark.co.kr/armory")) {
-                                    AsyncImage(model = "${charArr[i][0]!!.CharacterImage!!}", contentDescription = "캐릭터 이미지")
-                                } else {
-                                    Image(painter = rememberAsyncImagePainter("${charArr[i][0]!!.CharacterImage!!.replace("PNG","png")}"), contentDescription = "캐릭터 이미지")
-                                }
-
+                                AsyncImage(model = "${charArr[i][0]!!.CharacterImage!!}", contentDescription = "캐릭터 이미지"))
                             }
                             Text("캐릭터이름 : ${s.characterName}", fontSize = 8.sp)
                             Text("서버이름 : ${s.serverName}", fontSize = 8.sp)

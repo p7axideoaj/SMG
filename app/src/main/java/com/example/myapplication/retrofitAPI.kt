@@ -29,13 +29,14 @@ interface retrofitAPI {
     fun getItemCodeData(@Path("itemId") itemId:Int): Call<List<marketsItemData>>
     @Headers("$token")
     @FormUrlEncoded
-    @POST("markets/items")
+    @JvmSuppressWildcards
+    @POST("auctions/items")
     fun getAuctionData(
         @Field("ItemLevelMin") itemLevelMin:Int?,
         @Field("ItemLevelMax") itemLevelMax:Int?,
         @Field("ItemGradeQuality") itemGradeQuality:Int?,
-        @Field("SkillOptions") skillOptions:List<findOption>?,
-        @Field("EtcOptions") etcOptions:List<findOption>?,
+        @Field("SkillOptions") skillOptions: List<Map<String, Int?>>,
+        @Field("EtcOptions") etcOptions:List<Map<String, Int?>>,
         @Field("Sort") sort:String,
         @Field("CategoryCode") categoryCode:Int,
         @Field("CharacterClass") characterClass:String?,

@@ -10,6 +10,9 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+
 
 fun getJSONNewsDate(cList: MutableList<newsData>, ctx: Context) {
     val retrofit = Retrofit.Builder()
@@ -670,32 +673,32 @@ fun getJSONAuctions(cList: MutableList<auctionsData?>) {
         }
     })
 }
+
 fun getJSONAuctionsData(cList: MutableList<auctionItemsData?>,
-                        itemLevelMin: Int?, itemLevelMax: Int?, itemGradeQuality: Int?,skillOptions: List<findOption>?, etcOptions: List<findOption>?,
+                        itemLevelMin: Int?, itemLevelMax: Int?, itemGradeQuality: Int?,skillOptions: findOption, etcOptions: findOption,
                         categoryCode: Int, characterClass: String?, itemTier: Int?, itemGrade: String?, itemName: String?
                         ,pageNo: Int)  {
+    val logging = HttpLoggingInterceptor()
+
+    logging.setLevel(HttpLoggingInterceptor.Level.BODY)
+    val httpClient = OkHttpClient.Builder()
+
+    httpClient.addInterceptor(logging)
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())
+        .client(httpClient.build())
         .build()
 
+    val skill = listOf(findOption.toMap(skillOptions))
+    val etc = listOf(findOption.toMap(etcOptions))
     val retrofitAPIMethod = retrofit.create(retrofitAPI::class.java)
-    Log.d("데데이터들", "itemLevelMin = $itemLevelMin,\n" +
-            "itemLevelMax = $itemLevelMax,\n" +
-            "itemGradeQuality = $itemGradeQuality,\n" +
-            "skillOptions = $skillOptions,\n" +
-            "etcOptions = $etcOptions,\n" +
-            "categoryCode = $categoryCode,\n" +
-            "characterClass = $characterClass,\n" +
-            "itemTier = $itemTier,\n" +
-            "itemGrade = $itemGrade,\n" +
-            "itemName = $itemName,")
     val call: Call<auctionItemsData> = retrofitAPIMethod.getAuctionData(
         itemLevelMin = itemLevelMin,
         itemLevelMax = itemLevelMax,
         itemGradeQuality = itemGradeQuality,
-        skillOptions = skillOptions,
-        etcOptions = etcOptions,
+        skillOptions = skill,
+        etcOptions = etc,
         sort = "BIDSTART_PRICE",
         categoryCode = categoryCode,
         characterClass = characterClass,
@@ -709,9 +712,9 @@ fun getJSONAuctionsData(cList: MutableList<auctionItemsData?>,
     call.enqueue(object : Callback<auctionItemsData?> {
         override fun onResponse(call: Call<auctionItemsData?>, response: Response<auctionItemsData?>) {
             Log.d("아아","${response.code()}")
+            Log.d("데데데이터", "${response.body()}")
             if(response.isSuccessful) {
                 var cp: auctionItemsData? = response.body()
-                Log.d("아아","${cp}\nㅁㅁㅁㅁ")
                 if(cList.isNotEmpty()) {
                     cList.clear()
                 }

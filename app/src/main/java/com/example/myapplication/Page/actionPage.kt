@@ -160,7 +160,7 @@ fun actionPage(navController: NavHostController) {
                 Log.d("데이터들", "skills : ${dataList} / etcs : ${etcDataList}")
                 getJSONAuctionsData(itemDataList, itemLevelMin = if(itemMinLevel == 0) null else itemMinLevel,
                     itemLevelMax = if(itemMaxLevel == 0) null else itemMaxLevel, itemGradeQuality = if(itemGradeQualities == 0) null else itemGradeQualities,
-                    skillOptions = listOf(dataList), etcOptions = listOf(etcDataList),
+                    skillOptions = dataList, etcOptions = etcDataList,
                     categoryCode = categoryCode, characterClass = if(characterClass == "선택 사항 없음") null else characterClass,
                     itemTier = if(itemTier == 0) null else itemTier, itemGrade = if(itemGrade == "") null else itemGrade,
                     itemName = if(itemName == "") null else itemName, pageNo = pageNo
@@ -273,7 +273,7 @@ fun actionPage(navController: NavHostController) {
                                 }
                             }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                             TextField(value = "$itemMaxLevel", onValueChange = {
-                                itemMaxLevel = if(it != "") {
+                                itemMaxLevel = if(it == "") {
                                     0
                                 } else if(auctionsData.maxItemLevel < it.toInt()) {
                                     1700
@@ -587,18 +587,20 @@ fun actionPage(navController: NavHostController) {
                         Text(text = "아이템을 불러오는 중입니다")
                     } else {
                         itemData.items.forEach { item ->
-                            Row() {
-                                AsyncImage(model = "${item.icon}", contentDescription = "${item.name}")
-                                Column() {
-                                    Row {
-                                       Text(text = "${item.name}")
-                                       Text(text = "${item.Level}")
-                                    }
-                                    Row {
-                                        Text(text = "${item.gradeQuality}")
-                                        item.options.forEach { option ->
-                                            Text(text = "${option.optionName}")
-                                            // 이미지로 교체 예정(tripods)
+                            if(item != null) {
+                                Row() {
+                                    AsyncImage(model = "${item.icon}", contentDescription = "${item.name}")
+                                    Column() {
+                                        Row {
+                                            Text(text = "${item.name}")
+                                            Text(text = "${item.Level}")
+                                        }
+                                        Column() {
+                                            Text(text = "${item.gradeQuality?: ""}")
+                                            item.options.forEach { option ->
+                                                Text(text = "${option.optionName}")
+                                                // 이미지로 교체 예정(tripods)
+                                            }
                                         }
                                     }
                                 }
