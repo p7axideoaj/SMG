@@ -221,7 +221,7 @@ fun getJSONProfile(cList: MutableList<charterProfile?>, ctx: Context, username: 
         }
     })
 }
-fun getJSONProfileRetrunList(ctx: Context, username: String): MutableList<charterProfile?> {
+fun getJSONProfileRetrunList( username: String): MutableList<charterProfile?> {
     val retrofit = Retrofit.Builder()
         .baseUrl("https://developer-lostark.game.onstove.com/")
         .addConverterFactory(GsonConverterFactory.create())

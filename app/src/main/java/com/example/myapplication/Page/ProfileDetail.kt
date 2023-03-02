@@ -51,9 +51,10 @@ import org.json.JSONObject
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import androidx.compose.runtime.getValue
+import com.holix.android.bottomsheetdialog.compose.BottomSheetDialog
 
-@ExperimentalPagerApi
 @OptIn(ExperimentalMaterialApi::class)
+@ExperimentalPagerApi
 @Composable
 fun ProfileDetailHome(
     navController: NavHostController,
@@ -78,10 +79,11 @@ fun ProfileDetailHome(
             while (true) {
                 getJSONChaterSiblings(siblingList, username)
                 getJSONProfile(list, context, username)
+                delay(1000)
                 for(i in 0 until siblingList.size) {
                     if(username != siblingList[i].characterName) {
                         if(charArr.size != siblingList.size) {
-                            charArr.add(getJSONProfileRetrunList(context, siblingList[i].characterName))
+                            charArr.add(getJSONProfileRetrunList(siblingList[i].characterName))
                         }
                         Log.d("씨루떡떡", "${charArr}")
                     }
@@ -94,9 +96,6 @@ fun ProfileDetailHome(
             charArr.clear()
         }
     }
-    val bottomSheetScaffoldState = rememberBottomSheetScaffoldState(
-        bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed)
-    )
     val db: DBSearchData = DBSearchData(context);
     val str = db.selectDataByName(username);
     val coroutineScope = rememberCoroutineScope()
@@ -105,34 +104,141 @@ fun ProfileDetailHome(
         db.addSearchData(searchData = SearchData(time = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC),name = it!!.CharacterName, title = it!!.Title?: "", image = it!!.CharacterImage?: ""))
     }
     val scaffoldState = rememberScaffoldState()
-    BottomSheetScaffold(
-        scaffoldState = bottomSheetScaffoldState,
-        sheetContent = {
+    var show by remember {
+        mutableStateOf(false)
+    }
+    Scaffold(
+        scaffoldState = scaffoldState,
+    ) {
+        LazyColumn() {
+            items(list) {
+                if(it != null) {
+                    Box(
+                        Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth()
+                            .height(100.dp)
+                            .background(Color.DarkGray)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                            Column() {
+                                Box(
+                                    Modifier
+                                        .size(50.dp)
+                                        .background(Color.White)
+                                        .clip(CircleShape), contentAlignment = Alignment.Center) {
+                                    if(it.CharacterClassName.isEmpty()) {
+                                        null
+                                    } else {
+                                        val className = when (it.CharacterClassName) {
+                                            "아르카나" -> R.drawable.arcana
+                                            "바드" -> R.drawable.bard
+                                            "배틀마스터" ->R.drawable.battle_master
+                                            "버서커" -> R.drawable.berserker
+                                            "블레이드" -> R.drawable.blade
+                                            "블스터" -> R.drawable.blaster
+                                            "데레모닉" -> R.drawable.demonic
+                                            "디스트로이어" -> R.drawable.destroyed
+                                            "데빌헌터" -> R.drawable.devil_hunter
+                                            "도화가" -> R.drawable.drawing_artist
+                                            "건슬링어" -> R.drawable.gunslinger
+                                            "호크아이" -> R.drawable.hawkeye
+                                            "홀리나이트" -> R.drawable.holy_night
+                                            "기상술사" -> R.drawable.meteorologist
+                                            "인파이터" -> R.drawable.infight
+                                            "리퍼" -> R.drawable.reaper
+                                            "스카우터" -> R.drawable.scouter
+                                            "슬레이어" -> R.drawable.slayer
+                                            "소서리스" -> R.drawable.sorceress
+                                            "창술사" -> R.drawable.spearman
+                                            "스트라이커" -> R.drawable.striker
+                                            "서머너" -> R.drawable.summoner
+                                            "기공사" -> R.drawable.technician
+                                            "워로드" -> R.drawable.warlord
+                                            else -> null
+                                        }
+                                        className?.let { it1 ->
+                                            Image(
+                                                painter = painterResource(id = it1),
+                                                contentDescription = "직업 아이콘",
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .clip(CircleShape)
+                                            )
+                                        }
+
+                                    }
+
+                                }
+                                Button(
+                                    modifier = Modifier
+                                        .width(50.dp).height(30.dp),
+                                    onClick = {
+                                        show = true
+                                    }
+                                ) {
+                                    Text(
+                                        text = "부계정 보기", fontSize = 4.sp
+                                    )
+                                }
+                            }
+                            Column(Modifier.width(200.dp)) {
+                                Text("캐릭터 이름 : ${it.CharacterName}")
+                                Text("칭호 : ${it.Title?: ""}")
+                                Text("캐릭터 레벨 : Lv.${it.CharacterLevel}")
+                                Text("최대아이템 레벨 : Lv.${it.ItemMaxLevel}")
+                                Text("현재아이템 레벨 : Lv.${it.ItemAvgLevel}")
+                            }
+                        }
+                    }
+                    profileContent(it, context, username, bottom, lifecycleScope, navController)
+                }
+            }
+        }
+        if(show) {
+            BottomSheetDialog(onDismissRequest = {
+                show = false
+            }) {
                 Box(
                     Modifier
                         .fillMaxWidth()
                         .height(300.dp)
                         .padding(16.dp)) {
-                    LazyColumn() {
-                        items(list) { it ->
-                            if(charArr.size == 0 || charArr.isNullOrEmpty()) {
-                                Text("정보를 불러오는중입니다.")
-                            } else {
-                                LazyVerticalGrid(columns = GridCells.Fixed(3)) {
-                                    itemsIndexed(siblingList.toList().filter { s -> it.CharacterName != s.characterName }) { i, s ->
+                    if(charArr.size == 0 || charArr.isNullOrEmpty()) {
+                        Text("정보를 불러오는중입니다.")
+                    } else {
+                        LazyVerticalGrid(columns = GridCells.Fixed(3)) {
+                            list.forEach {
+                                if (it != null) {
+                                    Log.d("씨씨ㅣㅆ씨ㅣ씨씨씨씨","${charArr.toList()}")
+                                    itemsIndexed(
+                                        siblingList.toList()
+                                            .filter { s -> it.CharacterName != s.characterName }) { i, s ->
                                         Box(Modifier.clickable { navController.navigate("profileDetail/${s.characterName}") }) {
                                             Column {
-                                                if(charArr[i][0]!!.CharacterImage == null) {
-                                                    Box(){
+                                                if (charArr[i].first()!!.CharacterImage == null) {
+                                                    Box() {
                                                         Text("이미지 없음")
                                                     }
                                                 } else {
-                                                    AsyncImage(model = "${charArr[i][0]!!.CharacterImage!!}", contentDescription = "캐릭터 이미지")
+                                                    AsyncImage(
+                                                        model = "${charArr[i].first()!!.CharacterImage!!}",
+                                                        contentDescription = "캐릭터 이미지"
+                                                    )
                                                 }
-                                                Text("캐릭터이름 : ${s.characterName}", fontSize = 8.sp)
+                                                Text(
+                                                    "캐릭터이름 : ${s.characterName}",
+                                                    fontSize = 8.sp
+                                                )
                                                 Text("서버이름 : ${s.serverName}", fontSize = 8.sp)
-                                                Text("${s.characterClassName} Lv.${s.characterLevel}", fontSize = 8.sp)
-                                                Text("아이템레벨 : ${s.itemAvgLevel}", fontSize = 8.sp)
+                                                Text(
+                                                    "${s.characterClassName} Lv.${s.characterLevel}",
+                                                    fontSize = 8.sp
+                                                )
+                                                Text(
+                                                    "아이템레벨 : ${s.itemAvgLevel}",
+                                                    fontSize = 8.sp
+                                                )
                                             }
                                         }
                                     }
@@ -142,84 +248,9 @@ fun ProfileDetailHome(
                     }
                 }
             }
-        ) {
-        LazyColumn() {
-            items(list) {
-                profile(it!!)
-                profileContent(it, context, username, bottomSheetScaffoldState, lifecycleScope, navController)
-            }
         }
     }
 }
-
-@Composable
-fun profile(it: charterProfile) {
-    Box(
-        Modifier
-            .padding(16.dp)
-            .fillMaxWidth()
-            .height(100.dp)
-            .background(Color.DarkGray)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(50.dp)
-                    .background(Color.White)
-                    .clip(CircleShape), contentAlignment = Alignment.Center) {
-                if(it.CharacterClassName.isEmpty()) {
-                    null
-                } else {
-                    val className = when (it.CharacterClassName) {
-                        "아르카나" -> R.drawable.arcana
-                        "바드" -> R.drawable.bard
-                        "배틀마스터" ->R.drawable.battle_master
-                        "버서커" -> R.drawable.berserker
-                        "블레이드" -> R.drawable.blade
-                        "블스터" -> R.drawable.blaster
-                        "데레모닉" -> R.drawable.demonic
-                        "디스트로이어" -> R.drawable.destroyed
-                        "데빌헌터" -> R.drawable.devil_hunter
-                        "도화가" -> R.drawable.drawing_artist
-                        "건슬링어" -> R.drawable.gunslinger
-                        "호크아이" -> R.drawable.hawkeye
-                        "홀리나이트" -> R.drawable.holy_night
-                        "기상술사" -> R.drawable.meteorologist
-                        "인파이터" -> R.drawable.infight
-                        "리퍼" -> R.drawable.reaper
-                        "스카우터" -> R.drawable.scouter
-                        "슬레이어" -> R.drawable.slayer
-                        "소서리스" -> R.drawable.sorceress
-                        "창술사" -> R.drawable.spearman
-                        "스트라이커" -> R.drawable.striker
-                        "서머너" -> R.drawable.summoner
-                        "기공사" -> R.drawable.technician
-                        "워로드" -> R.drawable.warlord
-                        else -> null
-                    }
-                    className?.let { it1 ->
-                        Image(
-                            painter = painterResource(id = it1),
-                            contentDescription = "직업 아이콘",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape)
-                        )
-                    }
-                }
-
-            }
-            Column(Modifier.width(200.dp)) {
-                Text("캐릭터 이름 : ${it.CharacterName}")
-                Text("칭호 : ${it.Title?: ""}")
-                Text("캐릭터 레벨 : Lv.${it.CharacterLevel}")
-                Text("최대아이템 레벨 : Lv.${it.ItemMaxLevel}")
-                Text("현재아이템 레벨 : Lv.${it.ItemAvgLevel}")
-            }
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterialApi::class)
 @ExperimentalPagerApi
 @Composable
