@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.myapplication.*
@@ -65,38 +66,41 @@ fun listView(context: Context, navController: NavController) {
         Text(text = "검색 결과가 없습니다.", color = Color.Black)
     } else {
         LazyColumn(verticalArrangement = Arrangement.Bottom){
-            itemsIndexed(list) { _, item ->
-                Box(Modifier.clickable { navController.navigate("profileDetail/${item.name}") }) {
-                    Row {
-                        Box(
-                            Modifier
-                                .width(50.dp)
-                                .height(60.dp)
-                        ) {
-                            AsyncImage(model = "${item.image}", contentDescription = null)
-                        }
-                        Box(Modifier.width(10.dp))
-                        Box(
-                            Modifier
-                                .height(60.dp)
-                                .width(200.dp)) {
-                            Column(Modifier.fillMaxHeight(), verticalArrangement = Arrangement.SpaceEvenly) {
-                                Text(text = item.name, color = Color.Black, fontSize = 14.sp)
-                                Text(text = item.title, color = Color.Black, fontSize = 10.sp)
+            if(list != null) {
+                itemsIndexed(list) { _, item ->
+                    if(item != null) {
+                        Box(Modifier.clickable { navController.navigate("profileDetail/${item.name}") }) {
+                            Row {
+                                Box(
+                                    Modifier
+                                        .width(50.dp)
+                                        .height(60.dp)
+                                ) {
+                                    AsyncImage(model = "${item.image}", contentDescription = null)
+                                }
+                                Box(Modifier.width(10.dp))
+                                Box(
+                                    Modifier
+                                        .height(60.dp)
+                                        .width(200.dp)) {
+                                    Column(Modifier.fillMaxHeight(), verticalArrangement = Arrangement.SpaceEvenly) {
+                                        Text(text = item.name, color = Color.Black, fontSize = 14.sp)
+                                        Text(text = item.title, color = Color.Black, fontSize = 10.sp)
+                                    }
+                                }
+                                IconButton(onClick = {
+                                    db.deleteData(item.name)
+                                    list = db.selectData()
+                                }) {
+                                    Icon(imageVector = Icons.Default.Delete, contentDescription = "delete")
+                                }
                             }
+
                         }
-                        IconButton(onClick = {
-                            db.deleteData(item.name)
-                            list = db.selectData()
-                        }) {
-                            Icon(imageVector = Icons.Default.Delete, contentDescription = "delete")
-                        }
+                        Box(Modifier.height(1.dp))
                     }
-
                 }
-                Box(Modifier.height(1.dp))
             }
-
         }
     }
 }
@@ -138,11 +142,29 @@ fun inputName(navController: NavController, context: Context) {
                 IconButton(onClick = {
                     if(userlist.isNullOrEmpty()) {
                         index = 0
+                        userlist.clear()
+                        scope.cancel()
+                        text = ""
                     } else {
                         navController.navigate("profileDetail/${text}")
                     }
                 }) {
                     Icon(imageVector = Icons.Default.Search, contentDescription = "search")
+                }
+            }
+            if (index != -1) {
+                Dialog(onDismissRequest = {
+                    index = -1
+                }) {
+                    Surface(
+                        modifier = Modifier
+                            .width(250.dp)
+                            .height(200.dp)
+                            .padding(10.dp),
+                        color = Color.White
+                    ) {
+                        Text(text = "존재하지않는 사용자입니다")
+                    }
                 }
             }
         }

@@ -58,8 +58,8 @@ class DBSearchData(context: Context?):
                 private const val TITLE_COL = "title"
 
             }
-        fun selectData(): MutableList<SearchData> {
-            val list = mutableListOf<SearchData>()
+        fun selectData(): MutableList<SearchData?> {
+            val list = mutableListOf<SearchData?>()
             val select = "select * from $TABLE_NAME order by 1 desc"
             val rd = readableDatabase
             val cursor = rd.rawQuery(select, null)

@@ -51,14 +51,9 @@ import org.json.JSONObject
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavController
-import coil.compose.rememberAsyncImagePainter
-import coil.imageLoader
-import coil.util.DebugLogger
-
 
 @ExperimentalPagerApi
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ProfileDetailHome(
     navController: NavHostController,
@@ -70,32 +65,88 @@ fun ProfileDetailHome(
     val list = remember {
         mutableStateListOf<charterProfile?>()
     }
+    val siblingList = remember {
+        mutableStateListOf<SiblingsData>()
+    }
+    val charArr = remember {
+        mutableListOf<List<charterProfile?>>()
+    }
 //    var url:String
     val scope = MainScope()
     DisposableEffect(0){
         scope.launch {
             while (true) {
+                getJSONChaterSiblings(siblingList, username)
                 getJSONProfile(list, context, username)
+                for(i in 0 until siblingList.size) {
+                    if(username != siblingList[i].characterName) {
+                        if(charArr.size != siblingList.size) {
+                            charArr.add(getJSONProfileRetrunList(context, siblingList[i].characterName))
+                        }
+                        Log.d("씨루떡떡", "${charArr}")
+                    }
+                }
                 delay(3000)
             }
         }
         onDispose {
             scope.cancel()
+            charArr.clear()
         }
     }
+    val bottomSheetScaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = BottomSheetState(BottomSheetValue.Collapsed)
+    )
     val db: DBSearchData = DBSearchData(context);
     val str = db.selectDataByName(username);
-
+    val coroutineScope = rememberCoroutineScope()
     db.deleteData(str?.name)
     list.map {
         db.addSearchData(searchData = SearchData(time = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC),name = it!!.CharacterName, title = it!!.Title?: "", image = it!!.CharacterImage?: ""))
     }
     val scaffoldState = rememberScaffoldState()
-    Scaffold(scaffoldState = scaffoldState) {
+    BottomSheetScaffold(
+        scaffoldState = bottomSheetScaffoldState,
+        sheetContent = {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .padding(16.dp)) {
+                    LazyColumn() {
+                        items(list) { it ->
+                            if(charArr.size == 0 || charArr.isNullOrEmpty()) {
+                                Text("정보를 불러오는중입니다.")
+                            } else {
+                                LazyVerticalGrid(columns = GridCells.Fixed(3)) {
+                                    itemsIndexed(siblingList.toList().filter { s -> it.CharacterName != s.characterName }) { i, s ->
+                                        Box(Modifier.clickable { navController.navigate("profileDetail/${s.characterName}") }) {
+                                            Column {
+                                                if(charArr[i][0]!!.CharacterImage == null) {
+                                                    Box(){
+                                                        Text("이미지 없음")
+                                                    }
+                                                } else {
+                                                    AsyncImage(model = "${charArr[i][0]!!.CharacterImage!!}", contentDescription = "캐릭터 이미지")
+                                                }
+                                                Text("캐릭터이름 : ${s.characterName}", fontSize = 8.sp)
+                                                Text("서버이름 : ${s.serverName}", fontSize = 8.sp)
+                                                Text("${s.characterClassName} Lv.${s.characterLevel}", fontSize = 8.sp)
+                                                Text("아이템레벨 : ${s.itemAvgLevel}", fontSize = 8.sp)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        ) {
         LazyColumn() {
             items(list) {
                 profile(it!!)
-                profileContent(it!!, context, username, scaffoldState, lifecycleScope, navController)
+                profileContent(it, context, username, bottomSheetScaffoldState, lifecycleScope, navController)
             }
         }
     }
@@ -110,44 +161,44 @@ fun profile(it: charterProfile) {
             .height(100.dp)
             .background(Color.DarkGray)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-            val className = when (it.CharacterClassName) {
-                "아르카나" -> R.drawable.arcana
-                "바드" -> R.drawable.bard
-                "배틀마스터" ->R.drawable.battle_master
-                "버서커" -> R.drawable.berserker
-                "블레이드" -> R.drawable.blade
-                "블스터" -> R.drawable.blaster
-                "데레모닉" -> R.drawable.demonic
-                "디스트로이어" -> R.drawable.destroyed
-                "데빌헌터" -> R.drawable.devil_hunter
-                "도화가" -> R.drawable.drawing_artist
-                "건슬링어" -> R.drawable.gunslinger
-                "호크아이" -> R.drawable.hawkeye
-                "홀리나이트" -> R.drawable.holy_night
-                "기상술사" -> R.drawable.meteorologist
-                "인파이터" -> R.drawable.infight
-                "리퍼" -> R.drawable.reaper
-                "스카우터" -> R.drawable.scouter
-                "슬레이어" -> R.drawable.slayer
-                "소서리스" -> R.drawable.sorceress
-                "창술사" -> R.drawable.spearman
-                "스트라이커" -> R.drawable.striker
-                "서머너" -> R.drawable.summoner
-                "기공사" -> R.drawable.technician
-                "워로드" -> R.drawable.warlord
-                else -> null
-            }
             Box(
                 Modifier
                     .size(50.dp)
                     .background(Color.White)
                     .clip(CircleShape), contentAlignment = Alignment.Center) {
-                if(it.CharacterClassName.isNullOrEmpty()) {
+                if(it.CharacterClassName.isEmpty()) {
                     null
                 } else {
-                    className?.let { it1 -> painterResource(id = it1) }?.let { it2 ->
+                    val className = when (it.CharacterClassName) {
+                        "아르카나" -> R.drawable.arcana
+                        "바드" -> R.drawable.bard
+                        "배틀마스터" ->R.drawable.battle_master
+                        "버서커" -> R.drawable.berserker
+                        "블레이드" -> R.drawable.blade
+                        "블스터" -> R.drawable.blaster
+                        "데레모닉" -> R.drawable.demonic
+                        "디스트로이어" -> R.drawable.destroyed
+                        "데빌헌터" -> R.drawable.devil_hunter
+                        "도화가" -> R.drawable.drawing_artist
+                        "건슬링어" -> R.drawable.gunslinger
+                        "호크아이" -> R.drawable.hawkeye
+                        "홀리나이트" -> R.drawable.holy_night
+                        "기상술사" -> R.drawable.meteorologist
+                        "인파이터" -> R.drawable.infight
+                        "리퍼" -> R.drawable.reaper
+                        "스카우터" -> R.drawable.scouter
+                        "슬레이어" -> R.drawable.slayer
+                        "소서리스" -> R.drawable.sorceress
+                        "창술사" -> R.drawable.spearman
+                        "스트라이커" -> R.drawable.striker
+                        "서머너" -> R.drawable.summoner
+                        "기공사" -> R.drawable.technician
+                        "워로드" -> R.drawable.warlord
+                        else -> null
+                    }
+                    className?.let { it1 ->
                         Image(
-                            painter = it2,
+                            painter = painterResource(id = it1),
                             contentDescription = "직업 아이콘",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
@@ -169,13 +220,14 @@ fun profile(it: charterProfile) {
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @ExperimentalPagerApi
 @Composable
 fun profileContent(
     it: charterProfile,
     context: Context,
     username: String,
-    scaffoldState: ScaffoldState,
+    scaffoldState: BottomSheetScaffoldState,
     lifecycleScope: LifecycleCoroutineScope,
     navController: NavHostController
 ) {
@@ -212,19 +264,12 @@ fun profileContent(
     val gemslist = remember {
         mutableStateListOf<charterGems?>()
     }
-    val siblingList = remember {
-        mutableStateListOf<SiblingsData>()
-    }
 
-    val charArr = remember {
-        mutableListOf<List<charterProfile?>>()
-    }
     val scope = MainScope()
     DisposableEffect(0){
         scope.launch {
             while (true) {
-                getJSONChaterSiblings(siblingList, username)
-                delay(500)
+
                 getJSONProfileEquipment(equipmentlist,context,username)
                 getJSONProfileAvatars(avatarslist, context, username)
                 getJSONProfileCollectibles(collectibleslist,context,username)
@@ -233,55 +278,17 @@ fun profileContent(
                 getJSONProfileGems(gemslist,context,username)
                 getJSONProfileCards(cardslist, context, username)
                 getJSONProfileCombatSkills(skillslist,context,username)
-                for(i in 0 until siblingList.size) {
-                    if(username != siblingList[i].characterName) {
-                        if(charArr.size != siblingList.size) {
-                            charArr.add(getJSONProfileRetrunList(context, siblingList[i].characterName))
-                        }
-                        Log.d("씨루떡떡", "${charArr}")
-                    }
-                }
                 delay(6000)
             }
         }
         onDispose {
             scope.cancel()
-            charArr.clear()
         }
     }
     val pages = listOf("캐릭터 정보", "아이템", "스킬", "수집품")
     val pagerState = rememberPagerState()
     val coroutineScope = rememberCoroutineScope()
     Column() {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .padding(16.dp)) {
-            if(charArr.size == 0 || charArr.isNullOrEmpty()) {
-                Text("정보를 불러오는중입니다.")
-            } else {
-            LazyVerticalGrid(columns = GridCells.Fixed(3)) {
-                itemsIndexed(siblingList.toList().filter { s -> it.CharacterName != s.characterName }) { i, s ->
-                    Box(Modifier.clickable { navController.navigate("profileDetail/${s.characterName}") }) {
-                        Column {
-                            if(charArr[i][0]!!.CharacterImage == null) {
-                                Box(){
-                                    Text("이미지 없음")
-                                }
-                            } else {
-                                AsyncImage(model = "${charArr[i][0]!!.CharacterImage!!}", contentDescription = "캐릭터 이미지")
-                            }
-                            Text("캐릭터이름 : ${s.characterName}", fontSize = 8.sp)
-                            Text("서버이름 : ${s.serverName}", fontSize = 8.sp)
-                            Text("${s.characterClassName} Lv.${s.characterLevel}", fontSize = 8.sp)
-                            Text("아이템레벨 : ${s.itemAvgLevel}", fontSize = 8.sp)
-                        }
-                    }
-                    }
-                }
-            }
-        }
         Box(
             Modifier
                 .fillMaxWidth()
@@ -918,10 +925,11 @@ fun combatSkill(skillslist: SnapshotStateList<charterCombatSkills?>) {
     }
 }
 
+@ExperimentalMaterialApi
 @Composable
 fun engravings(
     engravingslist: SnapshotStateList<charterEngravings?>,
-    scaffoldState: ScaffoldState,
+    scaffoldState: BottomSheetScaffoldState,
     lifecycleScope: LifecycleCoroutineScope
 ) {
     if(engravingslist.isNullOrEmpty()) {
@@ -1459,9 +1467,9 @@ fun gems(gemslist: SnapshotStateList<charterGems?>) {
 @Composable
 fun avatar(avatarslist: SnapshotStateList<charterAvatars?>, charterProfile: charterProfile) {
     if(avatarslist.isNullOrEmpty()) {
-        Text("착용중인 스킬이없습니다")
+        Text("착용중인 아바타가 없습니다")
     } else {
-        Column(
+        Box(
             Modifier
                 .fillMaxWidth()
                 .fillMaxHeight()) {
@@ -1488,7 +1496,7 @@ fun avatar(avatarslist: SnapshotStateList<charterAvatars?>, charterProfile: char
                                             index = idx
 
                                         }) {
-                                    AsyncImage(model = value.getJSONObject("value").getJSONObject("slotData").getString("iconPath"), contentDescription = "장비 아이콘", modifier = Modifier.fillMaxSize())
+                                    AsyncImage(model = "${it.Icon}", contentDescription = "장비 아이콘", modifier = Modifier.fillMaxSize())
                                 }
                             }
                         }
@@ -1751,7 +1759,7 @@ fun equipment(equipmentlist: SnapshotStateList<charterEquipment?>, charterProfil
                                                                                 second.getString(
                                                                                     "contentStr"
                                                                                 )
-                                                                            ), color = Color.White
+                                                                            ), color = Color.DarkGray
                                                                         )
                                                                         false, 0 -> Text(
                                                                             parse(
@@ -1764,6 +1772,7 @@ fun equipment(equipmentlist: SnapshotStateList<charterEquipment?>, charterProfil
                                                                     }
                                                                 }
                                                                 Text(parse(first.getString("topStr")))
+
                                                             }
                                                         }
                                                     }
