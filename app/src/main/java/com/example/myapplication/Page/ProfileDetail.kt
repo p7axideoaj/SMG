@@ -153,7 +153,7 @@ fun ProfileDetailHome(
                                             "스트라이커" -> R.drawable.striker
                                             "서머너" -> R.drawable.summoner
                                             "기공사" -> R.drawable.technician
-                                            "워로드" -> R.drawable.warlord
+                                            "워로드" -> R.drawable.warlord1
                                             else -> null
                                         }
                                         className?.let { it1 ->
