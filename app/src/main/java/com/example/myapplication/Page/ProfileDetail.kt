@@ -1,5 +1,6 @@
 package com.example.myapplication.Page
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
@@ -53,6 +54,7 @@ import java.time.ZoneOffset
 import androidx.compose.runtime.getValue
 import com.holix.android.bottomsheetdialog.compose.BottomSheetDialog
 
+@SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterialApi::class)
 @ExperimentalPagerApi
 @Composable
@@ -79,7 +81,7 @@ fun ProfileDetailHome(
             while (true) {
                 getJSONChaterSiblings(siblingList, username)
                 getJSONProfile(list, context, username)
-                delay(1000)
+                delay(2000)
                 for(i in 0 until siblingList.size) {
                     if(username != siblingList[i].characterName) {
                         if(charArr.size != siblingList.size) {
@@ -123,46 +125,44 @@ fun ProfileDetailHome(
                                 Box(
                                     Modifier
                                         .size(50.dp)
-                                        .background(Color.White)
-                                        .clip(CircleShape), contentAlignment = Alignment.Center) {
+                                        .clip(CircleShape).background(Color.Black), contentAlignment = Alignment.Center) {
                                     if(it.CharacterClassName.isEmpty()) {
                                         null
                                     } else {
                                         val className = when (it.CharacterClassName) {
-                                            "아르카나" -> R.drawable.arcana_background
-                                            "바드" -> R.drawable.bard_background
-                                            "배틀마스터" ->R.drawable.battle_master_background
-                                            "버서커" -> R.drawable.berserker_background
-                                            "블레이드" -> R.drawable.blade_background
-                                            "블스터" -> R.drawable.blaster_background
-                                            "데레모닉" -> R.drawable.demonic_background
-                                            "디스트로이어" -> R.drawable.destroyed_background
-                                            "데빌헌터" -> R.drawable.devil_hunter_background
-                                            "도화가" -> R.drawable.drawing_artist_background
-                                            "건슬링어" -> R.drawable.gunslinger_background
-                                            "호크아이" -> R.drawable.hawkeye_background
-                                            "홀리나이트" -> R.drawable.holy_night_background
-                                            "기상술사" -> R.drawable.meteorologist_background
-                                            "인파이터" -> R.drawable.infight_background
-                                            "리퍼" -> R.drawable.reaper_background
-                                            "스카우터" -> R.drawable.scouter_background
-                                            "슬레이어" -> R.drawable.slayer_background
-                                            "소서리스" -> R.drawable.sorceress_background
-                                            "창술사" -> R.drawable.spearman_background
-                                            "스트라이커" -> R.drawable.striker_background
-                                            "서머너" -> R.drawable.summoner_background
-                                            "기공사" -> R.drawable.technician_background
-                                            "워로드" -> R.drawable.warlord_background
+                                            "아르카나" -> R.drawable.arcana
+                                            "바드" -> R.drawable.bard
+                                            "배틀마스터" ->R.drawable.battle_master
+                                            "버서커" -> R.drawable.berserker
+                                            "블레이드" -> R.drawable.blade
+                                            "블래스터" -> R.drawable.blaster
+                                            "데모닉" -> R.drawable.demonic
+                                            "디스트로이어" -> R.drawable.destroyed
+                                            "데빌헌터" -> R.drawable.devil_hunter
+                                            "도화가" -> R.drawable.drawing_artist
+                                            "건슬링어" -> R.drawable.gunslinger
+                                            "호크아이" -> R.drawable.hawkeye
+                                            "홀리나이트" -> R.drawable.holy_night
+                                            "기상술사" -> R.drawable.meteorologist
+                                            "인파이터" -> R.drawable.infight
+                                            "리퍼" -> R.drawable.reaper
+                                            "스카우터" -> R.drawable.scouter
+                                            "슬레이어" -> R.drawable.slayer
+                                            "소서리스" -> R.drawable.sorceress
+                                            "창술사" -> R.drawable.spearman
+                                            "스트라이커" -> R.drawable.striker
+                                            "서머너" -> R.drawable.summoner
+                                            "기공사" -> R.drawable.technician
+                                            "워로드" -> R.drawable.warlord
                                             else -> null
                                         }
                                         className?.let { it1 ->
-                                            Image(
+                                            Icon(
                                                 painter = painterResource(id = it1),
                                                 contentDescription = "직업 아이콘",
-                                                contentScale = ContentScale.Crop,
                                                 modifier = Modifier
                                                     .fillMaxSize()
-                                                    .clip(CircleShape)
+                                                    .clip(CircleShape).background(Color.White)
                                             )
                                         }
 
@@ -171,9 +171,14 @@ fun ProfileDetailHome(
                                 }
                                 Button(
                                     modifier = Modifier
-                                        .width(50.dp).height(30.dp),
+                                        .width(50.dp)
+                                        .height(30.dp),
                                     onClick = {
-                                        show = true
+                                        charArr.forEach { charA ->
+                                            if(!charA.isNullOrEmpty()) {
+                                                show = true
+                                            }
+                                        }
                                     }
                                 ) {
                                     Text(
@@ -201,8 +206,8 @@ fun ProfileDetailHome(
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .height(300.dp)
-                        .padding(16.dp)) {
+                        .height(350.dp)
+                        .background(Color.White)) {
                     if(charArr.size == 0 || charArr.isNullOrEmpty()) {
                         Text("정보를 불러오는중입니다.")
                     } else {
