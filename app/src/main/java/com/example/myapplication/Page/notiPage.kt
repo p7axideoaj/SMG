@@ -56,7 +56,7 @@ fun NotiPage(navController: NavController, context: Context) {
                 elevation = 0.dp
             )
         }
-    ) {
+    ) { _ ->
         LazyColumn() {
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

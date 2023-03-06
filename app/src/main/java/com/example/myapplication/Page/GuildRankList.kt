@@ -65,7 +65,7 @@ fun GuildRankPage(navController: NavHostController) {
             backgroundColor = Color.White,
             elevation = 0.dp
         )
-    }, modifier = Modifier.padding(16.dp)) {
+    }, modifier = Modifier.padding(16.dp)) { _ ->
         LazyColumn() {
             item {
                 var expandableState by remember {

@@ -1,5 +1,6 @@
 package com.example.myapplication.Page
 
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -31,6 +32,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
+@SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
 fun actionPage(navController: NavHostController) {
     var itemName by remember {
@@ -182,7 +184,7 @@ fun actionPage(navController: NavHostController) {
             },
             backgroundColor = Color.White,
             elevation = 0.dp)
-    }) {
+    }) { _ ->
         LazyColumn(Modifier.padding(16.dp)) {
             item {
                 LazyRow() {
@@ -234,7 +236,7 @@ fun actionPage(navController: NavHostController) {
                 Column() {
                     Box() {
                         TextButton(onClick = { itemGradeQualitiesExpanded = true }) {
-                            Text(text = "아이템 등급 : ${if(itemGradeQualities == 0) "선택 사항 없음" else itemGradeQualities}")
+                            Text(text = "아이템 품질 : ${if(itemGradeQualities == 0) "선택 사항 없음" else itemGradeQualities}")
                         }
                         DropdownMenu(expanded = itemGradeQualitiesExpanded, onDismissRequest = { itemGradeQualitiesExpanded = false }) {
                             auctionsDataList.forEach { auctionsData ->
@@ -263,27 +265,40 @@ fun actionPage(navController: NavHostController) {
                         if(auctionsData == null) {
                             Text(text = "데이터를 불러오는 중입니다")
                         } else {
-                            TextField(value = "$itemMinLevel", onValueChange = {
-                                itemMinLevel = if(it == "") {
-                                    0
-                                } else if(auctionsData.maxItemLevel < it.toInt()) {
-                                    1700
-                                }  else {
-                                    it.toInt()
-                                }
-                            }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                            TextField(value = "$itemMaxLevel", onValueChange = {
-                                itemMaxLevel = if(it == "") {
-                                    0
-                                } else if(auctionsData.maxItemLevel < it.toInt()) {
-                                    1700
-                                } else {
-                                    it.toInt()
-                                }
-                            }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                                OutlinedTextField(value = "$itemMinLevel", onValueChange = {
+                                    itemMinLevel = if(it == "") {
+                                        0
+                                    } else if(auctionsData.maxItemLevel < it.toInt()) {
+                                        1700
+                                    }  else {
+                                        it.toInt()
+                                    }
+                                }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), label = { Text(
+                                    text = "최소레벨"
+                                )}, modifier = Modifier.width(80.dp))
+                                Text(text = "~",
+                                    Modifier
+                                        .width(50.dp)
+                                        .padding(top = 30.dp, start = 20.dp))
+                                OutlinedTextField(value = "$itemMaxLevel", onValueChange = {
+                                    itemMaxLevel = if(it == "") {
+                                        0
+                                    } else if(auctionsData.maxItemLevel < it.toInt()) {
+                                        1700
+                                    } else {
+                                        it.toInt()
+                                    }
+                                }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), label = { Text(
+                                    text = "최대레벨"
+                                )}, modifier = Modifier.width(80.dp))
+                            }
                         }
                 }
-                TextField(value = itemName, onValueChange = {itemName = it})
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(value = itemName, onValueChange = {itemName = it}, label = { Text(
+                    text = "아이템 이름"
+                )})
                 Column() {
                     Box() {
                         TextButton(onClick = {
@@ -469,8 +484,8 @@ fun actionPage(navController: NavHostController) {
                         }
                     }
                 }
-                Column() {
-                    TextField(value = "${skillMinLevel}", onValueChange = {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    OutlinedTextField(value = "${skillMinLevel}", onValueChange = {
                         if(it != "") {
                             skillMinLevel = it.toInt()
                             dataList.minValue = skillMinLevel
@@ -478,15 +493,23 @@ fun actionPage(navController: NavHostController) {
                             skillMinLevel = 0
                         }
 
-                    }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                    TextField(value = "${skillsMaxLevel}", onValueChange = {
+                    }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), label = { Text(
+                        text = "최소레벨"
+                    )}, modifier = Modifier.width(80.dp))
+                    Text(text = "~",
+                        Modifier
+                            .width(50.dp)
+                            .padding(top = 30.dp, start = 20.dp))
+                    OutlinedTextField(value = "${skillsMaxLevel}", onValueChange = {
                         if(it != "") {
                             skillsMaxLevel = it.toInt()
                             dataList.maxValue = skillsMaxLevel
                         } else {
                             skillsMaxLevel = 0
                         }
-                    }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                    }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), label = { Text(
+                        text = "최대레벨"
+                    )}, modifier = Modifier.width(80.dp))
                 }
                 // etc
                 Column() {
@@ -558,8 +581,8 @@ fun actionPage(navController: NavHostController) {
                         }
                     }
                 }
-                Column() {
-                    TextField(value = "$etcMinLevel", onValueChange = {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    OutlinedTextField(value = "$etcMinLevel", onValueChange = {
                         if(it != "") {
                             etcMinLevel = it.toInt()
                             etcDataList.minValue = etcMinLevel
@@ -567,18 +590,26 @@ fun actionPage(navController: NavHostController) {
                             etcMinLevel = 0
                         }
 
-                    }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                    TextField(value = "$etcMaxLevel", onValueChange = {
+                    }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), label = { Text(
+                        text = "최소레벨"
+                    )}, modifier = Modifier.width(80.dp))
+                    Text(text = "~",
+                        Modifier
+                            .width(50.dp)
+                            .padding(top = 30.dp, start = 20.dp))
+                    OutlinedTextField(value = "$etcMaxLevel", onValueChange = {
                         if(it != "") {
                             etcMaxLevel = it.toInt()
                             etcDataList.maxValue = etcMaxLevel
                         } else {
                             etcMaxLevel = 0
                         }
-                    }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                    }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), label = { Text(
+                        text = "최대레벨"
+                    )}, modifier = Modifier.width(80.dp))
                 }
             }
-            item { Spacer(modifier = Modifier.height(5.dp)) }
+            item { Spacer(modifier = Modifier.height(15.dp)) }
             if(itemDataList.isNullOrEmpty()) {
                 item { Text(text = "검색 옵션을 입력해주세요") }
             } else {

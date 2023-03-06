@@ -1309,35 +1309,32 @@ fun gems(gemslist: SnapshotStateList<charterGems?>) {
                                                                                     }"
                                                                                 )
                                                                                 Text(
-                                                                                    "${
-                                                                                        parse(
-                                                                                            value.getJSONObject(
-                                                                                                "value"
-                                                                                            )
-                                                                                                .getJSONObject(
-                                                                                                    "Element_000"
-                                                                                                )
-                                                                                                .getString(
-                                                                                                    "tier"
-                                                                                                )
+                                                                                    parse(
+                                                                                        value.getJSONObject(
+                                                                                            "value"
                                                                                         )
-                                                                                    }"
+                                                                                            .getJSONObject(
+                                                                                                "Element_000"
+                                                                                            )
+                                                                                            .getString(
+                                                                                                "tier"
+                                                                                            )
+                                                                                    )
                                                                                 )
                                                                             } else {
                                                                                 Text(
-                                                                                    "${
-                                                                                        parse(
-                                                                                            value.getJSONObject(
-                                                                                                "value"
-                                                                                            )
-                                                                                                .getJSONObject(
-                                                                                                    "Element_000"
-                                                                                                )
-                                                                                                .getString(
-                                                                                                    "desc"
-                                                                                                )
+                                                                                    parse(
+                                                                                        value.getJSONObject(
+                                                                                            "value"
                                                                                         )
-                                                                                    }")
+                                                                                            .getJSONObject(
+                                                                                                "Element_000"
+                                                                                            )
+                                                                                            .getString(
+                                                                                                "desc"
+                                                                                            )
+                                                                                    )
+                                                                                )
                                                                             }
                                                                             if (!value.getJSONObject("value")
                                                                                     .getJSONObject("Element_001")

@@ -131,7 +131,7 @@ fun Homepage(
         }
     }
 
-    Scaffold(scaffoldState = scaffoldState) {
+    Scaffold(scaffoldState = scaffoldState) { _ ->
         LazyColumn(
             Modifier
                 .fillMaxSize()

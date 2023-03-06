@@ -116,7 +116,7 @@ fun MarketPage(navController: NavHostController) {
             },
             backgroundColor = Color.White,
             elevation = 0.dp)
-    }) {
+    }) {_ ->
         LazyColumn(Modifier.padding(16.dp)) {
             item {
                 LazyRow() {
@@ -165,7 +165,9 @@ fun MarketPage(navController: NavHostController) {
                                 }
                             }
                     }
-                TextField(value = itemName, onValueChange = {itemName = it})
+                OutlinedTextField(value = itemName, onValueChange = {itemName = it}, label = { Text(
+                    text = "아이템이름"
+                ) })
                 Column() {
                     Box() {
                         TextButton(onClick = {
@@ -272,6 +274,7 @@ fun MarketPage(navController: NavHostController) {
                     }
                 }
             }
+            item { Spacer(modifier = Modifier.height(10.dp)) }
             if(marketItem.isNullOrEmpty()) {
                 item { Text(text = "검색 옵션을 입력해주세요") }
             } else {
