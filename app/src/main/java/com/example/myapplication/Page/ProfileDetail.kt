@@ -125,7 +125,8 @@ fun ProfileDetailHome(
                                 Box(
                                     Modifier
                                         .size(50.dp)
-                                        .clip(CircleShape).background(Color.Black), contentAlignment = Alignment.Center) {
+                                        .clip(CircleShape)
+                                        .background(Color.Black), contentAlignment = Alignment.Center) {
                                     if(it.CharacterClassName.isEmpty()) {
                                         null
                                     } else {
@@ -162,7 +163,8 @@ fun ProfileDetailHome(
                                                 contentDescription = "직업 아이콘",
                                                 modifier = Modifier
                                                     .fillMaxSize()
-                                                    .clip(CircleShape).background(Color.White)
+                                                    .clip(CircleShape)
+                                                    .background(Color.White)
                                             )
                                         }
 
@@ -203,46 +205,52 @@ fun ProfileDetailHome(
             BottomSheetDialog(onDismissRequest = {
                 show = false
             }) {
-                Box(
-                    Modifier
+                Surface(Modifier
+                    .fillMaxWidth()
+                    .height(450.dp)
+                    .background(Color.White)
+                    .padding(16.dp)
+                    .clip(shape = RoundedCornerShape(topEnd = 12.dp, topStart = 12.dp))) {
+                    Box(Modifier
                         .fillMaxWidth()
-                        .height(350.dp)
-                        .background(Color.White)) {
-                    if(charArr.size == 0 || charArr.isNullOrEmpty()) {
-                        Text("정보를 불러오는중입니다.")
-                    } else {
-                        LazyVerticalGrid(columns = GridCells.Fixed(3)) {
-                            list.forEach {
-                                if (it != null) {
-                                    Log.d("씨씨ㅣㅆ씨ㅣ씨씨씨씨","${charArr.toList()}")
-                                    itemsIndexed(
-                                        siblingList.toList()
-                                            .filter { s -> it.CharacterName != s.characterName }) { i, s ->
-                                        Box(Modifier.clickable { navController.navigate("profileDetail/${s.characterName}") }) {
-                                            Column {
-                                                if (charArr[i].first()!!.CharacterImage == null) {
-                                                    Box() {
-                                                        Text("이미지 없음")
+                        .height(350.dp)) {
+                        Spacer(modifier = Modifier.height(15.dp))
+                        if(charArr.size == 0 || charArr.isNullOrEmpty()) {
+                            Text("정보를 불러오는중입니다.")
+                        } else {
+                            LazyVerticalGrid(columns = GridCells.Fixed(3)) {
+                                list.forEach {
+                                    if (it != null) {
+                                        Log.d("씨씨ㅣㅆ씨ㅣ씨씨씨씨","${charArr.toList()}")
+                                        itemsIndexed(
+                                            siblingList.toList()
+                                                .filter { s -> it.CharacterName != s.characterName }) { i, s ->
+                                            Box(Modifier.clickable { navController.navigate("profileDetail/${s.characterName}") }) {
+                                                Column {
+                                                    if (charArr[i].first()!!.CharacterImage == null) {
+                                                        Box() {
+                                                            Text("이미지 없음")
+                                                        }
+                                                    } else {
+                                                        AsyncImage(
+                                                            model = "${charArr[i].first()!!.CharacterImage!!}",
+                                                            contentDescription = "캐릭터 이미지"
+                                                        )
                                                     }
-                                                } else {
-                                                    AsyncImage(
-                                                        model = "${charArr[i].first()!!.CharacterImage!!}",
-                                                        contentDescription = "캐릭터 이미지"
+                                                    Text(
+                                                        "캐릭터이름 : ${s.characterName}",
+                                                        fontSize = 8.sp
+                                                    )
+                                                    Text("서버이름 : ${s.serverName}", fontSize = 8.sp)
+                                                    Text(
+                                                        "${s.characterClassName} Lv.${s.characterLevel}",
+                                                        fontSize = 8.sp
+                                                    )
+                                                    Text(
+                                                        "아이템레벨 : ${s.itemAvgLevel}",
+                                                        fontSize = 8.sp
                                                     )
                                                 }
-                                                Text(
-                                                    "캐릭터이름 : ${s.characterName}",
-                                                    fontSize = 8.sp
-                                                )
-                                                Text("서버이름 : ${s.serverName}", fontSize = 8.sp)
-                                                Text(
-                                                    "${s.characterClassName} Lv.${s.characterLevel}",
-                                                    fontSize = 8.sp
-                                                )
-                                                Text(
-                                                    "아이템레벨 : ${s.itemAvgLevel}",
-                                                    fontSize = 8.sp
-                                                )
                                             }
                                         }
                                     }

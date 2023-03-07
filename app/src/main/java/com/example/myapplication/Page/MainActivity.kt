@@ -12,6 +12,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,6 +24,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -29,9 +32,11 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -142,24 +147,41 @@ fun Homepage(
                     Icon(Icons.Default.Notifications, contentDescription = "공지")
                     Text(text = "공지사항 보러가기")
                 }
-                Box(Modifier.clickable { navController.navigate("search") }) {
-                    Row(horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(text = "검색")
-                        Icon(imageVector = Icons.Default.Search, contentDescription = "검색아이콘")
+                Spacer(modifier = Modifier.height(10.dp))
+                Box(
+                    Modifier
+                        .clickable { navController.navigate("search") }
+                        .padding(start = 10.dp, end = 10.dp)
+                        .fillMaxWidth(0.8f)
+                        .height(30.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.LightGray)
+                        .border(
+                            width = 1.dp,
+                            color = Color.DarkGray,
+                            shape = RoundedCornerShape(12.dp)
+                        )) {
+                    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                        Text(text = "검색", fontSize = 16.sp, color = Color.DarkGray, modifier = Modifier.padding(start = 10.dp, top = 3.dp))
+                        Icon(imageVector = Icons.Default.Search, contentDescription = "검색아이콘", modifier = Modifier.padding(top = 3.dp, end = 10.dp))
                     }
                 }
-                Box(Modifier.clickable { navController.navigate("markets") }) {
-                    Row(horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(text = "거래소 바로가기")
-                        Icon(imageVector = Icons.Default.Done, contentDescription = "거래소")
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(Modifier.fillMaxWidth(0.6f),horizontalArrangement = Arrangement.SpaceBetween) {
+                    Box(Modifier.clickable { navController.navigate("markets") }) {
+                        Row(horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(text = "거래소")
+                            Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "거래소")
+                        }
+                    }
+                    Box(Modifier.clickable { navController.navigate("action") }) {
+                        Row(horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(text = "경매장")
+                            Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "경매장")
+                        }
                     }
                 }
-                Box(Modifier.clickable { navController.navigate("action") }) {
-                    Row(horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(text = "경매장 바로가기")
-                        Icon(imageVector = Icons.Default.Done, contentDescription = "경매장")
-                    }
-                }
+                Spacer(modifier = Modifier.height(10.dp))
                 var name by remember {
                     mutableStateOf(prefs.getString("name"))
                 }
